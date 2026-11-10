@@ -70,7 +70,7 @@ export default function Admin({api}) {
         {vehicle && <><label>Verified bidding instructions<textarea name="instructions" defaultValue={values.instructions ?? ''} /></label>
           <label>Inspection details<textarea name="inspection" defaultValue={values.inspection ?? ''} /></label>
           <label>{item?.photos?.length ? 'Replace photos (optional)' : 'Vehicle photos'}<input type="file" name="images" multiple required={!item?.photos?.length} accept="image/jpeg,image/png,image/webp" /></label>
-          <small>Up to five JPEG, PNG, or WebP photos, 3 MB each. The first photo is the public cover for active paid vehicle listings.</small>
+          <small>Up to five JPEG, PNG, or WebP photos, 3 MB each. The first photo is the public cover for active paid vehicle listings.{item?.photos?.length ? ' Uploading new files replaces the entire gallery.' : ''}</small>
           <label className="check"><input name="authorized" type="checkbox" required={!item?.photos?.length} /> The issuer supplied or authorized these photos</label></>}
         <button className="primary" disabled={busy}>Save listing</button>
       </form>

@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { Icon } from '../stitch-ui.jsx';
-import { cleanTitle, conditionLabel, formatDeadline } from './utils.js';
+import { cleanTitle, conditionLabel, formatDeadline, sections } from './utils.js';
 
 export function AccessBadge({item}) {
-  return <span className={item.access === 'paid' ? 'badge paid' : 'badge'}>
-    {item.access === 'paid' ? 'Subscriber' : 'Free access'}
-  </span>;
+  if (item.access !== 'paid') return <span className="badge">Free access</span>;
+  return <span className="badge paid">{item.locked ? 'Paid listing' : 'Unlocked'}</span>;
 }
 
 export function VehicleRailCard({item, onOpen}) {
@@ -114,17 +113,19 @@ export function Photo({id, api}) {
 }
 
 export function Dock({screen, section, onHome, onVehicles, onSaved, onAlerts}) {
+  const homeOn = screen === 'home' || (screen === 'catalog' && section && section !== 'vehicle');
+  const vehiclesOn = screen === 'catalog' && section === 'vehicle';
   return <nav className="dock phone-only" aria-label="Mobile navigation">
-    <button type="button" className={screen === 'home' ? 'active' : ''} onClick={onHome}>
+    <button type="button" className={homeOn ? 'active' : ''} aria-current={homeOn ? 'page' : undefined} onClick={onHome}>
       <span className="dock-pill"><Icon name="home" size={20} /></span>Home
     </button>
-    <button type="button" className={screen === 'catalog' && section === 'vehicle' ? 'active' : ''} onClick={onVehicles}>
+    <button type="button" className={vehiclesOn ? 'active' : ''} aria-current={vehiclesOn ? 'page' : undefined} onClick={onVehicles}>
       <span className="dock-pill"><Icon name="car" size={20} /></span>Vehicles
     </button>
-    <button type="button" className={screen === 'saved' ? 'active' : ''} onClick={onSaved}>
+    <button type="button" className={screen === 'saved' ? 'active' : ''} aria-current={screen === 'saved' ? 'page' : undefined} onClick={onSaved}>
       <span className="dock-pill"><Icon name="bookmark" size={20} /></span>Saved
     </button>
-    <button type="button" className={screen === 'alerts' ? 'active' : ''} onClick={onAlerts}>
+    <button type="button" className={screen === 'alerts' ? 'active' : ''} aria-current={screen === 'alerts' ? 'page' : undefined} onClick={onAlerts}>
       <span className="dock-pill"><Icon name="bell" size={20} /></span>Alerts
     </button>
   </nav>;
@@ -144,7 +145,6 @@ export function DeskNav({
   onAlerts,
   onProfile,
   onSignIn,
-  onSection,
 }) {
   return <header className="desk-nav desk-only" aria-label="Site navigation">
     <div className="desk-nav-inner">
@@ -174,7 +174,7 @@ export function DeskNav({
       <div className="desk-actions">
         <div className="lang mini" role="group" aria-label="Language">
           <button type="button" aria-pressed={language === 'en'} onClick={() => onLanguage('en')}>EN</button>
-          <button type="button" aria-pressed={language === 'am'} onClick={() => onLanguage('am')}>አማ</button>
+          <button type="button" aria-pressed={language === 'am'} disabled title="Amharic coming soon">አማ</button>
         </div>
         {me
           ? <button type="button" className="outline desk-profile" onClick={onProfile}>Account</button>
@@ -182,4 +182,65 @@ export function DeskNav({
       </div>
     </div>
   </header>;
+}
+
+export function SiteFooter({
+  me,
+  onHome,
+  onSection,
+  onSaved,
+  onAlerts,
+  onPlans,
+  onProfile,
+  onSignIn,
+  compact = false,
+}) {
+  return <footer className={'site-footer' + (compact ? ' has-dock-clearance' : '')}>
+    <div className="site-footer-inner">
+      <div className="site-footer-brand">
+        <button type="button" className="site-footer-logo" onClick={onHome}>
+          <span className="desk-mark"><Icon name="gavel" size={18} /></span>
+          <span>
+            <strong>Bid Ethiopia</strong>
+            <span className="badge demo">DEMO</span>
+          </span>
+        </button>
+        <p>Find a tender or vehicle lot, judge the notice, then bid with the issuer. Closing times shown in East Africa Time.</p>
+      </div>
+      <div className="site-footer-cols">
+        <div>
+          <h2>Browse</h2>
+          <ul>
+            {sections.map(([key, label]) => (
+              <li key={key}>
+                <button type="button" onClick={() => onSection(key)}>{label}</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h2>Account</h2>
+          <ul>
+            <li><button type="button" onClick={me ? onProfile : onSignIn}>{me ? 'My account' : 'Sign in'}</button></li>
+            <li><button type="button" onClick={onPlans}>Subscriptions</button></li>
+            <li><button type="button" onClick={onSaved}>Saved lots</button></li>
+            <li><button type="button" onClick={onAlerts}>Alerts</button></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Directory</h2>
+          <ul className="site-footer-meta">
+            <li>Timezone · EAT (UTC+3)</li>
+            <li>Listings labeled DEMO</li>
+            <li>Purchase on the website</li>
+            <li>Android uses the same account</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div className="site-footer-bar">
+      <p>© 2026 Bid Ethiopia · Informational procurement directory prototype</p>
+      <p>Not affiliated with any issuer. Bidding happens with the issuer, not on this site.</p>
+    </div>
+  </footer>;
 }

@@ -11,7 +11,7 @@ export function HomeScreen({q, setQ, items, onSection, onOpen, onProfile}) {
   return <section className="catalog is-home">
     <div className="app-home-bar phone-only">
       <div className="page-head">
-        <h1>Bid Ethiopia</h1>
+        <p className="phone-brand">Bid Ethiopia</p>
         <span className="badge demo">DEMO</span>
       </div>
       <button type="button" className="avatar-btn" onClick={onProfile} aria-label="Profile">
@@ -30,8 +30,9 @@ export function HomeScreen({q, setQ, items, onSection, onOpen, onProfile}) {
     </div>
     <div className="desk-home-intro desk-only">
       <div>
-        <p className="eyebrow">Ethiopian tenders & vehicle bids</p>
-        <h1 className="serif desk-home-title">Find a bid. Judge the lot. Bid with the issuer.</h1>
+        <p className="eyebrow">Procurement directory · Ethiopia</p>
+        <h1 className="serif desk-home-title">Bid Ethiopia</h1>
+        <p className="desk-home-tagline">Find a bid. Judge the lot. Bid with the issuer.</p>
       </div>
       <p className="desk-home-lead">Search public, NGO, private, and vehicle opportunities. Closing times are in EAT. DEMO listings are labeled.</p>
     </div>
@@ -62,7 +63,7 @@ export function HomeScreen({q, setQ, items, onSection, onOpen, onProfile}) {
   </section>;
 }
 
-export function CatalogScreen({section, q, setQ, condition, setCondition, items, busy, error, onSection, onOpen, onHome, onProfile}) {
+export function CatalogScreen({section, q, setQ, condition, setCondition, items, busy, error, onSection, onOpen, onHome, onProfile, onAlerts}) {
   const title = sections.find(([key]) => key === section)?.[1] || 'Search results';
   const vehicleChips = [['', 'All'], ['used', 'Used'], ['damaged', 'Damaged'], ['salvage', 'Salvage']];
   const countLabel = busy && !items.length
@@ -139,7 +140,9 @@ export function CatalogScreen({section, q, setQ, condition, setCondition, items,
     {section === 'ngo' && (
       <div className="notify-card">
         <p>Need more humanitarian bids?</p>
-        <button type="button" className="primary wide"><Icon name="bell" size={16} /> Notify on New NGO Tenders</button>
+        <button type="button" className="primary wide" onClick={onAlerts || onHome}>
+          <Icon name="bell" size={16} /> View Alerts
+        </button>
       </div>
     )}
     {busy && !items.length ? <p role="status">Loading opportunities…</p>
@@ -190,7 +193,6 @@ export function DetailScreen({item, api, me, saved, onBack, onSave, onSubscribe,
     <div className="detail-facts">
       <span className="badge demo">DEMO</span>
       <AccessBadge item={item} />
-      {item.locked && <span className="badge paid">Preview only</span>}
       {item.condition && <span className="badge">{conditionLabel(item.condition)}</span>}
       {info.lot && <span className="badge">Lot {info.lot}</span>}
     </div>
@@ -238,15 +240,20 @@ export function DetailScreen({item, api, me, saved, onBack, onSave, onSubscribe,
           <li>Visible now: issuer, reference, lot, closing (EAT)</li>
           <li>Locked: bidding instructions{item.vehicle ? ', extra photos' : ''}</li>
         </ul>
-        {action}
-        {!me && <button type="button" className="outline" onClick={onSubscribe}>View plan prices</button>}
+        <div className="desk-only detail-panel-actions">
+          {action}
+          {!me && <button type="button" className="outline" onClick={onSubscribe}>View plan prices</button>}
+          <button type="button" className="outline" onClick={me ? onSave : onSignIn}>{saved ? 'Saved' : 'Save'}</button>
+        </div>
       </> : <>
         <h2 className="serif">{actionLabel}</h2>
-        {info.instructions && <div className="notice-text"><p>{info.instructions}</p></div>}
-        {action}
-        {!info.instructions && !info.sourceUrl && <p>The issuer has not attached bidding instructions to this notice yet.</p>}
+        {info.instructions && <div className="notice-text desk-only"><p>{info.instructions}</p></div>}
+        <div className="desk-only detail-panel-actions">
+          {action}
+          {!info.instructions && !info.sourceUrl && <p>The issuer has not attached bidding instructions to this notice yet.</p>}
+          <button type="button" className="outline" onClick={me ? onSave : onSignIn}>{saved ? 'Saved' : 'Save'}</button>
+        </div>
       </>}
-      <button type="button" className="outline" onClick={me ? onSave : onSignIn}>{saved ? 'Saved' : 'Save'}</button>
     </aside>
     <div className="detail-dock phone-only">
       <button type="button" className="save-fab" aria-label={saved ? 'Saved' : 'Save'} onClick={me ? onSave : onSignIn}>
@@ -257,7 +264,7 @@ export function DetailScreen({item, api, me, saved, onBack, onSave, onSubscribe,
   </article>;
 }
 
-export function ProfileScreen({me, language, onLanguage, onSignIn, onAlerts, onSaved, onPlans}) {
+export function ProfileScreen({me, language, onLanguage, onSignIn, onSignOut, onAlerts, onSaved, onPlans, savedCount = 0}) {
   return <section className="stitch-profile">
     <div className="profile-head">
       <div>
@@ -273,24 +280,32 @@ export function ProfileScreen({me, language, onLanguage, onSignIn, onAlerts, onS
           <div className="name-row">
             <strong>{me?.email || 'Guest User'}</strong>
             {!me && <span className="badge browse-only">Browse-Only</span>}
+            {me?.demo && <span className="badge demo">Local demo</span>}
             {me?.subscribed && <span className="badge paid">Subscriber</span>}
           </div>
           <p>{me
-            ? (me.subscribed ? 'Subscription active — paid listings unlocked' : 'Signed in · free account. Subscribe to unlock paid bidding instructions.')
+            ? (me.demo
+              ? 'Local demo sign-in — browsing and local saves work; payment verification needs Supabase.'
+              : me.subscribed
+                ? 'Subscription active — paid listings unlocked'
+                : 'Signed in · free account. Subscribe to unlock paid bidding instructions.')
             : 'Browse-only mode. Sign in to sync saved lots and submit a subscription payment reference.'}</p>
         </div>
       </div>
       <div className="stat-grid">
         <button type="button" className="stat" onClick={onSaved}>
-          <Icon name="bookmark" size={16} /><span>Saved Lots</span><strong>{me ? '0' : '0 synced'}</strong>
+          <Icon name="bookmark" size={16} /><span>Saved Lots</span><strong>{me ? String(savedCount) : 'Local demo'}</strong>
         </button>
         <button type="button" className="stat" onClick={onPlans}>
           <Icon name="gavel" size={16} /><span>Subscription</span><strong>{me?.subscribed ? 'Active' : 'Locked'}</strong>
         </button>
-        <div className="stat"><Icon name="bell" size={16} /><span>Alerts</span><strong>Local only</strong></div>
+        <button type="button" className="stat" onClick={onAlerts}>
+          <Icon name="bell" size={16} /><span>Alerts</span><strong>Local only</strong>
+        </button>
       </div>
       {!me && <button type="button" className="primary wide" onClick={onSignIn}>Sign in <Icon name="arrow" size={18} /></button>}
       {me && !me.subscribed && <button type="button" className="primary wide" onClick={onPlans}>View subscriptions <Icon name="arrow" size={18} /></button>}
+      {me && onSignOut && <button type="button" className="outline wide" onClick={onSignOut}>Sign out</button>}
     </div>
     <div className="verify-banner">
       <Icon name="shield" size={18} />
@@ -304,7 +319,7 @@ export function ProfileScreen({me, language, onLanguage, onSignIn, onAlerts, onS
         </div>
         <div className="lang mini" role="group" aria-label="Language">
           <button type="button" aria-pressed={language === 'en'} onClick={() => onLanguage('en')}>EN</button>
-          <button type="button" aria-pressed={language === 'am'} onClick={() => onLanguage('am')}>አማ</button>
+          <button type="button" aria-pressed={language === 'am'} disabled title="Amharic coming soon">አማ</button>
         </div>
       </div>
       <div className="pref-row">
@@ -318,16 +333,12 @@ export function ProfileScreen({me, language, onLanguage, onSignIn, onAlerts, onS
     </div>
     <div className="info-box">
       <Icon name="info" size={16} />
-      <p>Bid Ethiopia is an informational directory prototype. No real user transactions or credentials required.</p>
-    </div>
-    <div className="help-row">
-      <button type="button" className="help-btn"><Icon name="info" size={16} />Directory Help</button>
-      <button type="button" className="help-btn"><Icon name="shield" size={16} />Auction Rules</button>
+      <p>Bid Ethiopia is an informational directory prototype. DEMO listings are labeled. Configure Supabase for real sign-in and payment references.</p>
     </div>
   </section>;
 }
 
-export function AuthScreen({client, onBack}) {
+export function AuthScreen({client, onBack, onDemoSignIn}) {
   const [email, setEmail] = useState('demo@bidethiopia.et');
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
@@ -337,8 +348,16 @@ export function AuthScreen({client, onBack}) {
   async function submit(event) {
     event.preventDefault();
     if (!client) {
-      setSent(true);
-      setMessage('Demo mode: enter any 6-digit code to continue locally.');
+      if (!sent) {
+        setSent(true);
+        setMessage('Demo mode: enter any 6-digit code to continue locally.');
+        return;
+      }
+      if (!/^\d{6}$/.test(code.trim())) {
+        setMessage('Enter a 6-digit demo code.');
+        return;
+      }
+      onDemoSignIn?.({email, subscribed: false});
       return;
     }
     setBusy(true);
@@ -407,7 +426,7 @@ export function AuthScreen({client, onBack}) {
   </section>;
 }
 
-export function SavedScreen({items, onOpen, onRestore}) {
+export function SavedScreen({items, onOpen, onRestore, guest = true}) {
   const [filter, setFilter] = useState('all');
   const vehicles = items.filter((item) => item.vehicle);
   const procurement = items.filter((item) => !item.vehicle);
@@ -415,8 +434,8 @@ export function SavedScreen({items, onOpen, onRestore}) {
 
   return <section className="stitch-saved">
     <div className="saved-status">
-      <strong>{items.length} Demo Items Saved</strong>
-      <span className="badge mint">Synced Locally</span>
+      <strong>{items.length} {guest ? 'Demo items saved' : 'Saved lots'}</strong>
+      <span className={'badge ' + (guest ? 'browse-only' : 'mint')}>{guest ? 'Local only' : 'Synced'}</span>
     </div>
     <div className="chip-row">
       <button type="button" className={filter === 'all' ? 'chip on' : 'chip'} onClick={() => setFilter('all')}>All Items ({items.length})</button>
@@ -456,10 +475,12 @@ export function SavedScreen({items, onOpen, onRestore}) {
       ))}
       {!shown.length && <div className="empty">No saved opportunities yet.</div>}
     </div>
-    <div className="demo-foot">
-      <p>Demo environment — items are stored locally for this preview.</p>
-      <button type="button" className="link" onClick={onRestore}>Restore demo saved items</button>
-    </div>
+    {guest && (
+      <div className="demo-foot">
+        <p>Guest preview — these lots stay on this device until you sign in.</p>
+        <button type="button" className="link" onClick={onRestore}>Restore demo saved items</button>
+      </div>
+    )}
   </section>;
 }
 
@@ -469,7 +490,7 @@ export function AlertsScreen({items, onOpen, onHome}) {
   return <section className="stitch-alerts">
     <div className="alerts-toolbar">
       <span className="sandbox-pill"><span className="dot" /> Simulated Tender Updates</span>
-      <button type="button" className="text-back"><Icon name="check" size={16} /> Mark all read</button>
+      <button type="button" className="text-back" disabled title="Demo alerts are static">Mark all read</button>
     </div>
     <div className="alert-stack">
       {vehicle && <article className="alert-card urgent">
@@ -515,7 +536,7 @@ export function AlertsScreen({items, onOpen, onHome}) {
   </section>;
 }
 
-export function PlansScreen({me, plans, payments, term, setTerm, reference, setReference, onSubmit, onAuth, onBack}) {
+export function PlansScreen({me, plans, plansError, payments, term, setTerm, reference, setReference, onSubmit, onAuth, onBack}) {
   const priced = plans?.plans?.filter((plan) => plan.price) ?? [];
   return <section className="stitch-plans">
     <button type="button" className="text-back" onClick={onBack}><Icon name="back" size={18} /> Back</button>
@@ -527,6 +548,7 @@ export function PlansScreen({me, plans, payments, term, setTerm, reference, setR
         <p>Subscription active{me.expiresAt ? ` until ${formatDeadline(me.expiresAt)} EAT` : ''}.</p>
       </div>
     )}
+    {plansError && <div className="empty" role="alert">{plansError}</div>}
     {plans ? <>
       <div className="plans">
         {plans.plans.map((plan) => (
@@ -546,8 +568,8 @@ export function PlansScreen({me, plans, payments, term, setTerm, reference, setR
       {plans.instructions
         ? <div className="notice-text pay-instructions"><h3>Payment instructions</h3><p>{plans.instructions}</p></div>
         : <div className="empty">Payment instructions are not configured yet.</div>}
-    </> : <p role="status">Loading plans…</p>}
-    {me ? (
+    </> : !plansError && <p role="status">Loading plans…</p>}
+    {me && !me.demo ? (
       <form className="stack" onSubmit={onSubmit}>
         <label>Transaction reference
           <input value={reference} onChange={(event) => setReference(event.target.value)} required placeholder="Bank deposit reference" />
@@ -556,6 +578,8 @@ export function PlansScreen({me, plans, payments, term, setTerm, reference, setR
           Submit for verification
         </button>
       </form>
+    ) : me?.demo ? (
+      <div className="empty" role="status">Demo sign-in cannot submit payments. Configure Supabase for real verification, or continue browsing plans.</div>
     ) : (
       <button type="button" className="primary wide" onClick={onAuth}>Sign in to submit a reference</button>
     )}

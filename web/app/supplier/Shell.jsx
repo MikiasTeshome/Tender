@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { DeskNav, Dock } from './components.jsx';
+import { DeskNav, Dock, SiteFooter } from './components.jsx';
 import {
   AlertsScreen,
   AuthScreen,
@@ -22,13 +22,16 @@ export default function Shell({authUrl = '', authKey = ''}) {
   const client = useMemo(() => (authUrl && authKey ? createClient(authUrl, authKey) : null), [authUrl, authKey]);
   const [session, setSession] = useState(null);
   const [me, setMe] = useState(null);
+  const [demoMe, setDemoMe] = useState(null);
   const [route, setRoute] = useState({bid: '', screen: 'home', section: ''});
   const [filters, setFilters] = useState(emptyFilters);
   const [catalog, setCatalog] = useState({items: []});
   const [detail, setDetail] = useState(null);
+  const [detailError, setDetailError] = useState('');
   const [saved, setSaved] = useState([]);
   const [demoSaved, setDemoSaved] = useState([]);
   const [plans, setPlans] = useState(null);
+  const [plansError, setPlansError] = useState('');
   const [payments, setPayments] = useState([]);
   const [status, setStatus] = useState('');
   const [loadError, setLoadError] = useState('');
@@ -38,6 +41,7 @@ export default function Shell({authUrl = '', authKey = ''}) {
   const [term, setTerm] = useState('');
 
   const accessToken = session?.access_token;
+  const account = me || demoMe;
   const api = useCallback(async (path, options = {}) => {
     const {data, binary, ...init} = options;
     const headers = new Headers(init.headers);
@@ -59,9 +63,10 @@ export default function Shell({authUrl = '', authKey = ''}) {
       setPayments([]);
       return;
     }
-    const [account, list] = await Promise.all([api('me'), api('saved')]);
-    setMe(account);
+    const [accountData, list] = await Promise.all([api('me'), api('saved')]);
+    setMe(accountData);
     setSaved(list);
+    setDemoMe(null);
   }, [api, accessToken]);
 
   useEffect(() => {
@@ -79,16 +84,16 @@ export default function Shell({authUrl = '', authKey = ''}) {
   useEffect(() => {
     const sync = () => {
       const next = readRoute();
-      setRoute(next);
+      setRoute({bid: next.bid, screen: next.screen, section: next.section});
       if (next.bid) return;
       if (next.screen === 'catalog') {
-        setFilters((prev) => ({
-          ...emptyFilters,
-          q: prev.q,
+        setFilters({
+          q: next.q || '',
           section: next.section || '',
-        }));
+          condition: next.condition || '',
+        });
       } else if (next.screen === 'home') {
-        setFilters(emptyFilters);
+        setFilters({...emptyFilters, q: next.q || ''});
       }
     };
     sync();
@@ -99,10 +104,6 @@ export default function Shell({authUrl = '', authKey = ''}) {
   useEffect(() => {
     refresh().catch((error) => setStatus(errorText(error)));
   }, [refresh]);
-
-  useEffect(() => {
-    if (route.screen === 'auth' && me) go('profile');
-  }, [route.screen, me]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -142,19 +143,30 @@ export default function Shell({authUrl = '', authKey = ''}) {
 
   useEffect(() => {
     setDetail(null);
+    setDetailError('');
     if (!route.bid) return;
     const controller = new AbortController();
     api('listings/' + encodeURIComponent(route.bid), {signal: controller.signal})
       .then(setDetail)
       .catch((error) => {
-        if (!controller.signal.aborted) setStatus(errorText(error));
+        if (!controller.signal.aborted) setDetailError(errorText(error));
       });
     return () => controller.abort();
   }, [api, route.bid]);
 
   useEffect(() => {
     if (route.screen !== 'plans') return;
-    api('plans').then(setPlans).catch((error) => setStatus(errorText(error)));
+    setPlans(null);
+    setPlansError('');
+    api('plans')
+      .then((result) => {
+        setPlans(result);
+        if (!term && result.plans?.length) {
+          const first = result.plans.find((plan) => plan.price);
+          if (first) setTerm(String(first.months));
+        }
+      })
+      .catch((error) => setPlansError(errorText(error)));
     if (accessToken) api('payments').then(setPayments).catch((error) => setStatus(errorText(error)));
   }, [api, accessToken, route.screen]);
 
@@ -168,41 +180,101 @@ export default function Shell({authUrl = '', authKey = ''}) {
   }
 
   function navigate(next) {
-    writeRoute(next);
-    setRoute({bid: next.bid || '', screen: next.screen || 'home', section: next.section || ''});
+    const payload = {
+      bid: next.bid || '',
+      screen: next.screen || 'home',
+      section: next.section || '',
+      q: next.q ?? filters.q,
+      condition: next.condition ?? filters.condition,
+    };
+    writeRoute(payload);
+    setRoute({bid: payload.bid, screen: payload.screen, section: payload.section});
     window.scrollTo(0, 0);
   }
 
   function go(screen, section = '') {
     setStatus('');
     if (screen === 'catalog') {
-      setFilters((prev) => ({...emptyFilters, q: prev.q, section}));
-      navigate({screen: 'catalog', section});
+      setFilters((prev) => ({...emptyFilters, q: prev.q, section, condition: section === 'vehicle' ? prev.condition : ''}));
+      navigate({screen: 'catalog', section, q: filters.q, condition: section === 'vehicle' ? filters.condition : ''});
       return;
     }
     setFilters((prev) => ({...emptyFilters, q: screen === 'home' ? '' : prev.q}));
-    navigate({screen, section: ''});
+    navigate({screen, section: '', q: screen === 'home' ? '' : filters.q, condition: ''});
   }
 
   function open(id) {
     setStatus('');
-    navigate({bid: id});
+    navigate({bid: id, section: filters.section});
   }
 
   function setQ(value) {
     setStatus('');
     setFilters((prev) => ({...prev, q: value}));
-    if (value && route.screen === 'home') navigate({screen: 'catalog', section: filters.section});
+    if (route.screen === 'home' && value) {
+      writeRoute({screen: 'catalog', section: filters.section, q: value, condition: filters.condition});
+      setRoute({bid: '', screen: 'catalog', section: filters.section});
+      return;
+    }
+    if (route.screen === 'catalog' || route.screen === 'home') {
+      writeRoute({
+        screen: route.screen,
+        section: filters.section,
+        q: value,
+        condition: filters.condition,
+      });
+    }
   }
 
   function setCondition(value) {
     setFilters((prev) => ({...prev, condition: value}));
+    if (route.screen === 'catalog') {
+      writeRoute({
+        screen: 'catalog',
+        section: filters.section,
+        q: filters.q,
+        condition: value,
+      });
+    }
   }
 
   function chooseLanguage(next) {
+    if (next === 'am') return;
     setLanguage(next);
     window.localStorage.setItem('bid-lang', next);
   }
+
+  function handleDemoSignIn({email}) {
+    setDemoMe({email, subscribed: false, demo: true});
+    setStatus('');
+    go('profile');
+  }
+
+  async function handleSignOut() {
+    setStatus('');
+    if (client && accessToken) {
+      await client.auth.signOut();
+    }
+    setDemoMe(null);
+    setMe(null);
+    setSaved([]);
+    setPayments([]);
+    go('home');
+  }
+
+  function toggleDemoSave(id) {
+    setDemoSaved((prev) => {
+      if (prev.some((entry) => entry.id === id)) return prev.filter((entry) => entry.id !== id);
+      const fromCatalog = catalog.items.find((entry) => entry.id === id);
+      const fromDetail = detail?.id === id ? detail : null;
+      const next = fromCatalog || fromDetail;
+      return next ? [next, ...prev] : prev;
+    });
+  }
+
+  useEffect(() => {
+    if (route.screen === 'auth' && account) go('profile');
+  }, [route.screen, account]);
 
   const shown = catalog.items.filter((item) => {
     if (filters.section === 'vehicle') {
@@ -213,8 +285,11 @@ export default function Shell({authUrl = '', authKey = ''}) {
     return true;
   });
   const homeItems = catalog.items;
-  const savedItems = me && saved.length ? saved : demoSaved;
-  const savedCurrent = saved.some((entry) => entry.id === route.bid);
+  const savedItems = me ? saved : demoSaved;
+  const savedCount = me ? saved.length : demoSaved.length;
+  const savedCurrent = me
+    ? saved.some((entry) => entry.id === route.bid)
+    : demoSaved.some((entry) => entry.id === route.bid);
   const screen = route.bid ? 'detail' : route.screen;
   const showDock = !route.bid && ['home', 'catalog', 'saved', 'alerts', 'profile', 'auth', 'plans'].includes(screen);
 
@@ -226,14 +301,13 @@ export default function Shell({authUrl = '', authKey = ''}) {
       setQ={setQ}
       language={language}
       onLanguage={chooseLanguage}
-      me={me}
+      me={account}
       onHome={() => go('home')}
       onVehicles={() => go('catalog', 'vehicle')}
       onSaved={() => go('saved')}
       onAlerts={() => go('alerts')}
       onProfile={() => go('profile')}
       onSignIn={() => go('auth')}
-      onSection={(key) => go('catalog', key)}
     />
     <div className={'supplier-shell' + (route.bid ? ' has-detail-dock' : '') + (showDock ? ' has-dock' : '')}>
       {status && (
@@ -248,33 +322,51 @@ export default function Shell({authUrl = '', authKey = ''}) {
           ? <DetailScreen
               item={detail}
               api={api}
-              me={me}
+              me={account}
               saved={savedCurrent}
               onBack={() => go(filters.section ? 'catalog' : 'home', filters.section)}
-              onSave={() => run(async () => {
-                await api('saved/' + route.bid, {method: savedCurrent ? 'DELETE' : 'PUT'});
-                await refresh();
-              })}
+              onSave={() => {
+                if (accessToken) {
+                  void run(async () => {
+                    await api('saved/' + route.bid, {method: savedCurrent ? 'DELETE' : 'PUT'});
+                    await refresh();
+                  });
+                  return;
+                }
+                if (demoMe) {
+                  toggleDemoSave(route.bid);
+                  return;
+                }
+                go('auth');
+              }}
               onSubscribe={() => go('plans')}
               onSignIn={() => go('auth')}
             />
-          : !status && <p>Loading opportunity…</p>
+          : detailError
+            ? <div className="empty" role="alert">
+                <p>{detailError}</p>
+                <button type="button" className="outline" onClick={() => go(filters.section ? 'catalog' : 'home', filters.section)}>Back to listings</button>
+              </div>
+            : <p role="status">Loading opportunity…</p>
       ) : screen === 'auth' ? (
-        <AuthScreen client={client} onBack={() => go('profile')} />
+        <AuthScreen client={client} onBack={() => go('profile')} onDemoSignIn={handleDemoSignIn} />
       ) : screen === 'profile' ? (
         <ProfileScreen
-          me={me}
+          me={account}
           language={language}
           onLanguage={chooseLanguage}
           onSignIn={() => go('auth')}
+          onSignOut={handleSignOut}
           onAlerts={() => go('alerts')}
           onSaved={() => go('saved')}
           onPlans={() => go('plans')}
+          savedCount={savedCount}
         />
       ) : screen === 'plans' ? (
         <PlansScreen
-          me={me}
+          me={account}
           plans={plans}
+          plansError={plansError}
           payments={payments}
           term={term}
           setTerm={setTerm}
@@ -284,6 +376,12 @@ export default function Shell({authUrl = '', authKey = ''}) {
           onBack={() => go('profile')}
           onSubmit={(event) => {
             event.preventDefault();
+            if (!accessToken) {
+              setStatus(demoMe
+                ? 'Demo sign-in cannot submit payments. Configure Supabase for real verification.'
+                : 'Sign in to submit a payment reference.');
+              return;
+            }
             void run(async () => {
               await api('payments', {method: 'POST', data: {reference, months: term}});
               setReference('');
@@ -295,6 +393,7 @@ export default function Shell({authUrl = '', authKey = ''}) {
       ) : screen === 'saved' ? (
         <SavedScreen
           items={savedItems}
+          guest={!me}
           onOpen={open}
           onRestore={() => setDemoSaved(catalog.items.slice(0, 2))}
         />
@@ -314,6 +413,7 @@ export default function Shell({authUrl = '', authKey = ''}) {
           onOpen={open}
           onHome={() => go('home')}
           onProfile={() => go('profile')}
+          onAlerts={() => go('alerts')}
         />
       ) : (
         <HomeScreen
@@ -326,6 +426,18 @@ export default function Shell({authUrl = '', authKey = ''}) {
         />
       )}
     </div>
+
+    <SiteFooter
+      me={account}
+      compact={showDock || !!route.bid}
+      onHome={() => go('home')}
+      onSection={(key) => go('catalog', key)}
+      onSaved={() => go('saved')}
+      onAlerts={() => go('alerts')}
+      onPlans={() => go('plans')}
+      onProfile={() => go('profile')}
+      onSignIn={() => go('auth')}
+    />
 
     {showDock && (
       <Dock

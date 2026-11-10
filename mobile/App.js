@@ -45,7 +45,7 @@ function Cards({items,open}) {
     <View style={styles.cardBody}>
       <Text style={styles.kicker}>{item.condition ?? item.sector} · {item.access === 'paid' ? 'Subscriber' : 'Free'}</Text>
       <Text style={styles.cardTitle}>{item.title}</Text>
-      {!item.vehicle && item.issuer && <Text style={styles.body}>{item.issuer}</Text>}
+      {!!item.issuer && <Text style={styles.body}>{item.issuer}</Text>}
       <Text style={styles.body}>{closesIn(item.deadline,item.status)} · {date(item.deadline)}</Text>
     </View>
   </Pressable>);
@@ -199,21 +199,23 @@ export default function App() {
       {view === 'detail' && !item && !status && <Text style={styles.body}>Loading opportunity…</Text>}
       {view === 'detail' && item && <View style={styles.gap}>
         {item.vehicle && !!item.cover && <Image source={{uri:photo(item.cover)}} style={styles.cover} accessibilityLabel={item.title} />}
-        <Text style={styles.kicker}>{item.vehicle ? 'Vehicle bid' : item.sector} · {item.access === 'paid' ? 'Subscriber' : 'Free'}</Text>
+        <Text style={styles.kicker}>{item.vehicle ? 'Vehicle bid' : item.sector} · {item.access === 'paid' ? (item.locked ? 'Paid listing' : 'Unlocked') : 'Free access'}</Text>
         <Text style={styles.heading}>{item.title}</Text><Text style={styles.body}>{closesIn(item.deadline,item.status)} · {date(item.deadline)}</Text>
         {!!item.condition && <Text style={styles.kicker}>{item.condition}</Text>}
-        {item.locked ? <Text style={styles.notice}>The photo and condition are visible. A subscription unlocks the issuer, the other photos, and the bidding instructions.</Text> :
-          <>
+        {Object.entries({Issuer:item.issuer,Region:item.region,Location:item.details?.location,Reference:item.details?.reference,Lot:item.details?.lot}).filter(([,value]) => value).map(([key,value]) => <View key={key}><Text style={styles.kicker}>{key}</Text><Text style={styles.body}>{value}</Text></View>)}
+        {item.locked ? <>
+          <Text style={styles.notice}>Issuer, reference, lot, and closing stay visible. Subscribe on the website to unlock bidding instructions{item.vehicle ? ' and extra photos' : ''}.</Text>
+          <Button label="Open subscriptions on website" active onPress={() => run(() => Linking.openURL((base || 'https://bidethiopia.et') + '/?screen=plans'))} />
+        </> : <>
             <View style={styles.notice}>
               <Text style={styles.cardTitle}>Bid with the issuer</Text>
-              {!!item.details.instructions && <Text style={styles.body}>{item.details.instructions}</Text>}
-              {!!item.details.sourceUrl && <Button label="Open the issuer's notice ↗" active onPress={() => run(() => Linking.openURL(item.details.sourceUrl))} />}
+              {!!item.details?.instructions && <Text style={styles.body}>{item.details.instructions}</Text>}
+              {!!item.details?.sourceUrl && <Button label="Open the issuer's notice ↗" active onPress={() => run(() => Linking.openURL(item.details.sourceUrl))} />}
             </View>
-            {Object.entries({Issuer:item.issuer,Region:item.region,Location:item.details.location,Reference:item.details.reference,Lot:item.details.lot,
-              Make:item.details.make,Model:item.details.model,Year:item.details.year,Mileage:item.details.mileage}).filter(([,value]) => value).map(([key,value]) => <View key={key}><Text style={styles.kicker}>{key}</Text><Text style={styles.body}>{value}</Text></View>)}
-            {item.vehicle && item.photos.some((id) => id !== item.cover) && item.photos.filter((id) => id !== item.cover).map((id) => <Image key={id} source={{uri:photo(id),headers:token ? {Authorization:'Bearer ' + token} : {}}} style={styles.cover} accessibilityLabel="Another photo of this lot" />)}
-            {!!item.details.inspection && <View><Text style={styles.kicker}>Condition notes</Text><Text style={styles.body}>{item.details.inspection}</Text></View>}
-            {!!item.details.description && <View><Text style={styles.kicker}>Notice details</Text><Text style={styles.body}>{item.details.description}</Text></View>}
+            {Object.entries({Make:item.details?.make,Model:item.details?.model,Year:item.details?.year,Mileage:item.details?.mileage}).filter(([,value]) => value).map(([key,value]) => <View key={key}><Text style={styles.kicker}>{key}</Text><Text style={styles.body}>{value}</Text></View>)}
+            {item.vehicle && item.photos?.some((id) => id !== item.cover) && item.photos.filter((id) => id !== item.cover).map((id) => <Image key={id} source={{uri:photo(id),headers:token ? {Authorization:'Bearer ' + token} : {}}} style={styles.cover} accessibilityLabel="Another photo of this lot" />)}
+            {!!item.details?.inspection && <View><Text style={styles.kicker}>Condition notes</Text><Text style={styles.body}>{item.details.inspection}</Text></View>}
+            {!!item.details?.description && <View><Text style={styles.kicker}>Notice details</Text><Text style={styles.body}>{item.details.description}</Text></View>}
           </>}
         <Button label={showSaved ? 'Remove from saved' : 'Save opportunity'} onPress={() => account ? run(async () => {
           await api('saved/' + item.id,{method:showSaved ? 'DELETE' : 'PUT'});await refresh();
