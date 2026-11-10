@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 export const sections = [
   ['public', 'Public Tenders', 'building'],
   ['ngo', 'NGO Tenders', 'heart'],
@@ -62,4 +64,42 @@ export function writeRoute({bid = '', screen = 'home', section = '', q = '', con
     if (condition) url.searchParams.set('condition', condition);
   }
   history.pushState(null, '', url.pathname + url.search);
+}
+
+export const shortLabels = {public: 'Public', ngo: 'NGO', private: 'Private', vehicle: 'Vehicles'};
+
+export function closingInfo(deadline) {
+  const ms = new Date(deadline).getTime() - Date.now();
+  if (!Number.isFinite(ms)) return {label: 'Date unavailable', tone: ''};
+  if (ms <= 0) return {label: 'Closed', tone: 'closed'};
+  const hours = ms / 3600000;
+  if (hours < 24) return {label: 'Closes today', tone: 'hot'};
+  const days = Math.ceil(hours / 24);
+  return {label: days === 1 ? '1 day left' : days + ' days left', tone: days <= 3 ? 'hot' : ''};
+}
+
+export function countListings(items = []) {
+  const counts = {all: items.length, public: 0, ngo: 0, private: 0, vehicle: 0, used: 0, damaged: 0, salvage: 0};
+  for (const item of items) {
+    if (item.vehicle) {
+      counts.vehicle += 1;
+      if (counts[item.condition] !== undefined) counts[item.condition] += 1;
+    } else if (counts[item.sector] !== undefined) {
+      counts[item.sector] += 1;
+    }
+  }
+  return counts;
+}
+
+/** 'phone' < 1024px (phone + tablet web), 'desktop' >= 1024px. Null until mounted to avoid hydration mismatch. */
+export function useViewportMode() {
+  const [mode, setMode] = useState(null);
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 1024px)');
+    const sync = () => setMode(query.matches ? 'desktop' : 'phone');
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
+  return mode;
 }

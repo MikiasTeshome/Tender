@@ -348,7 +348,7 @@ function Detail({item,api,me,saved,onSave,subscribe,signIn,t}) {
   </article>;
 }
 
-function Profile({me,t,language,chooseLanguage,onSignIn,onAlerts,onSaved}) {
+function Profile({me,t,language,chooseLanguage,onSignIn,onAlerts,onSaved,onStaff}) {
   return <section className="stitch-profile">
     <div className="profile-head">
       <div>
@@ -361,7 +361,11 @@ function Profile({me,t,language,chooseLanguage,onSignIn,onAlerts,onSaved}) {
       <div className="guest-row">
         <div className="avatar guest"><Icon name="user" size={28} /></div>
         <div>
-          <div className="name-row"><strong>{me?.email || t('guest')}</strong>{!me && <span className="badge browse-only">{t('browseOnly')}</span>}</div>
+          <div className="name-row">
+            <strong>{me?.email || t('guest')}</strong>
+            {!me && <span className="badge browse-only">{t('browseOnly')}</span>}
+            {me?.admin && <span className="badge paid">Staff</span>}
+          </div>
           <p>{me ? (me.subscribed ? 'Subscription active' : 'Signed in · free account') : t('guestBody')}</p>
         </div>
       </div>
@@ -371,6 +375,7 @@ function Profile({me,t,language,chooseLanguage,onSignIn,onAlerts,onSaved}) {
         <div className="stat"><Icon name="bell" size={16} /><span>{t('alertsStat')}</span><strong>{t('localOnly')}</strong></div>
       </div>
       {!me && <button type="button" className="primary wide" onClick={onSignIn}>{t('signIn')} <Icon name="arrow" size={18} /></button>}
+      {me?.admin && onStaff && <button type="button" className="primary wide" onClick={onStaff}>Open staff console <Icon name="arrow" size={18} /></button>}
     </div>
     <div className="verify-banner"><Icon name="shield" size={18} /><p>{t('officialBanner')}</p></div>
     <div className="pref-list">
@@ -669,10 +674,10 @@ export default function Portal({authUrl,authKey}) {
           await api('saved/' + activeId,{method:savedCurrent ? 'DELETE' : 'PUT'});await refresh();
         })} subscribe={() => go('plans')} signIn={() => go('auth')} /> : !status && <p>{t('loading')}</p>}</> :
       view === 'auth' ? <Auth client={client} t={t} onBack={() => go('profile')} /> :
-      view === 'profile' ? <Profile me={me} t={t} language={language} chooseLanguage={chooseLanguage} onSignIn={() => go('auth')} onAlerts={() => go('alerts')} onSaved={() => go('saved')} /> :
-      view === 'staff' && me?.admin ? <Admin api={api} /> :
+      view === 'profile' ? <Profile me={me} t={t} language={language} chooseLanguage={chooseLanguage} onSignIn={() => go('auth')} onAlerts={() => go('alerts')} onSaved={() => go('saved')} onStaff={me?.admin ? () => go('staff') : undefined} /> :
+      view === 'staff' && me?.admin ? <Admin api={api} onBack={() => go('profile')} /> :
       view === 'plans' ? <section className="surface"><div className="eyebrow">Subscription access</div><h1>Unlock paid listings</h1>
-        <p>Choose a term to view full paid tenders and vehicle bidding instructions on web and Android.</p>
+        <p>Choose a term to view full paid tenders and vehicle bidding instructions on web, iOS, and Android.</p>
         {plans && <><div className="plans">{plans.plans.map((plan) => <button key={plan.months} className={'plan ' + (String(plan.months) === term ? 'selected' : '')} disabled={!plan.price} onClick={() => setTerm(String(plan.months))}><strong>{terms[plan.months]}</strong><span>{plan.price ? 'ETB ' + plan.price : 'Unavailable'}</span></button>)}</div>
           {plans.instructions && <div className="callout notice-text"><h3>Payment instructions</h3><p>{plans.instructions}</p></div>}</>}
         {me ? <form className="stack narrow-form" onSubmit={(event) => {event.preventDefault();void run(async () => {

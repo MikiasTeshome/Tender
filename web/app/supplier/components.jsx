@@ -1,97 +1,71 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { Icon } from '../stitch-ui.jsx';
-import { cleanTitle, conditionLabel, formatDeadline, sections } from './utils.js';
+import { cleanTitle, closingInfo, conditionLabel, formatDeadline, sections } from './utils.js';
 
 export function AccessBadge({item}) {
   if (item.access !== 'paid') return <span className="badge">Free access</span>;
   return <span className="badge paid">{item.locked ? 'Paid listing' : 'Unlocked'}</span>;
 }
 
-export function VehicleRailCard({item, onOpen}) {
-  const place = (item.region || item.details?.location || 'Ethiopia').toUpperCase();
-  return <article className="vehicle-rail-card">
-    <button type="button" className="vehicle-rail-media" onClick={() => onOpen(item.id)}>
-      {item.cover ? <img src={'/api/photos/' + item.cover} alt="" /> : <span>Vehicle</span>}
-      <span className={'cond-pill' + (item.condition === 'damaged' || item.condition === 'salvage' ? ' warn' : '')}>
+function ClosingChip({deadline}) {
+  const info = closingInfo(deadline);
+  return <span className={'m-closing ' + info.tone}><Icon name="clock" size={12} /> {info.label}</span>;
+}
+
+export function VehicleTile({item, onOpen}) {
+  const place = item.region || item.details?.location || 'Ethiopia';
+  return <button type="button" className="m-tile" onClick={() => onOpen(item.id)}>
+    <span className="m-tile-media">
+      {item.cover ? <img src={'/api/photos/' + item.cover} alt="" loading="lazy" /> : <span className="m-noimg"><Icon name="car" size={30} /></span>}
+      <span className={'m-tag' + (item.condition === 'damaged' || item.condition === 'salvage' ? ' warn' : '')}>
         {conditionLabel(item.condition)}
       </span>
-      <span className="bookmark-fab" aria-hidden="true"><Icon name="bookmark" size={16} /></span>
-      {item.details?.lot && <span className="lot-overlay">Lot #{item.details.lot}</span>}
-      <span className="place-overlay">{item.region || item.details?.location || 'Ethiopia'}</span>
-    </button>
-    <div className="vehicle-rail-body">
-      <p className="rail-meta">
-        <span className="place">{place}</span>
-        <span>·</span>
-        <Icon name="clock" size={14} />
-        <span>Closing {formatDeadline(item.deadline)} EAT</span>
-      </p>
-      <h3>{cleanTitle(item.title)}</h3>
-      <p className="issuer">{item.issuer}</p>
-      <button type="button" className="primary wide" onClick={() => onOpen(item.id)}>
-        View Vehicle <Icon name="arrow" size={16} />
-      </button>
-    </div>
-  </article>;
+      {item.details?.lot && <span className="m-lot">Lot {item.details.lot}</span>}
+    </span>
+    <span className="m-tile-body">
+      <strong>{cleanTitle(item.title)}</strong>
+      <span className="m-meta"><Icon name="pin" size={12} /> {place}</span>
+      <span className="m-tile-foot">
+        <ClosingChip deadline={item.deadline} />
+        {item.access === 'paid' && <span className="m-paid" title="Subscriber listing"><Icon name="lock" size={11} /></span>}
+      </span>
+    </span>
+  </button>;
+}
+
+export function VehicleRailCard(props) {
+  return <VehicleTile {...props} />;
+}
+
+export function VehicleCard(props) {
+  return <VehicleTile {...props} />;
 }
 
 export function TenderCard({item, onOpen}) {
-  return <article className={'tender-list-card' + (item.access === 'paid' ? ' is-paid' : '')}>
-    <div className="tender-list-top">
+  return <button type="button" className={'m-row sector-' + item.sector} onClick={() => onOpen(item.id)}>
+    <span className="m-row-main">
+      <strong>{cleanTitle(item.title)}</strong>
+      <span className="m-meta"><Icon name="building" size={12} /> {item.issuer}{item.region ? ' · ' + item.region : ''}</span>
+    </span>
+    <span className="m-row-side">
+      <ClosingChip deadline={item.deadline} />
       <AccessBadge item={item} />
-      <span className="badge demo">DEMO</span>
-      {item.details?.reference && <span className="ref-pill">Ref: {item.details.reference}</span>}
-    </div>
-    <h3>{cleanTitle(item.title)}</h3>
-    <p className="entity"><Icon name="building" size={14} /> {item.issuer}</p>
-    {(item.region || item.details?.location) && (
-      <p className="lot-place"><Icon name="pin" size={14} /> {item.region || item.details?.location}</p>
-    )}
-    <div className="deadline-bar mint">
-      <Icon name="clock" size={14} /> Closing {formatDeadline(item.deadline)} EAT
-    </div>
-    <button type="button" className="primary wide" onClick={() => onOpen(item.id)}>
-      View Tender →
-    </button>
-  </article>;
-}
-
-export function VehicleCard({item, onOpen}) {
-  return <article className="vehicle-list-card">
-    <button type="button" className="vehicle-rail-media" onClick={() => onOpen(item.id)}>
-      {item.cover ? <img src={'/api/photos/' + item.cover} alt="" /> : <span>Vehicle</span>}
-      <span className={'cond-pill' + (item.condition === 'damaged' || item.condition === 'salvage' ? ' warn' : '')}>
-        {conditionLabel(item.condition)}
-      </span>
-      <span className="bookmark-fab" aria-hidden="true"><Icon name="bookmark" size={16} /></span>
-      {item.details?.lot && <span className="lot-overlay">Lot #{item.details.lot}</span>}
-      {(item.region || item.details?.location) && (
-        <span className="place-overlay">{item.region || item.details?.location}</span>
-      )}
-    </button>
-    <div className="vehicle-rail-body">
-      <p className="rail-meta">
-        <span className="place">{(item.region || 'Ethiopia').toUpperCase()}</span>
-        <span>·</span>
-        <Icon name="clock" size={14} />
-        <span>Closing {formatDeadline(item.deadline)} EAT</span>
-      </p>
-      <h3>{cleanTitle(item.title)}</h3>
-      <p className="issuer">{item.issuer}</p>
-      <button type="button" className="primary wide" onClick={() => onOpen(item.id)}>
-        View Vehicle <Icon name="arrow" size={16} />
-      </button>
-    </div>
-  </article>;
+    </span>
+  </button>;
 }
 
 export function ListingStack({items, onOpen}) {
-  return <div className="list-stack">
-    {items.map((item) => item.vehicle
-      ? <VehicleCard key={item.id} item={item} onOpen={onOpen} />
-      : <TenderCard key={item.id} item={item} onOpen={onOpen} />)}
+  const vehicles = items.filter((item) => item.vehicle);
+  const tenders = items.filter((item) => !item.vehicle);
+  return <div className="m-stack">
+    {!!vehicles.length && <div className="m-grid">
+      {vehicles.map((item) => <VehicleTile key={item.id} item={item} onOpen={onOpen} />)}
+    </div>}
+    {!!tenders.length && <div className="m-rows">
+      {tenders.map((item) => <TenderCard key={item.id} item={item} onOpen={onOpen} />)}
+    </div>}
   </div>;
 }
 

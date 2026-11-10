@@ -1,9 +1,9 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Icon, sectionIcons } from '../stitch-ui.jsx';
 import { AccessBadge, ListingStack, Photo, VehicleRailCard } from './components.jsx';
-import { cleanTitle, conditionLabel, demoEmails, errorText, formatDeadline, sections, terms } from './utils.js';
+import { cleanTitle, conditionLabel, demoEmails, errorText, formatDeadline, sections, shortLabels, terms } from './utils.js';
 
 export function HomeScreen({q, setQ, items, busy, error, onSection, onOpen, onProfile}) {
   const vehicles = items.filter((item) => item.vehicle).slice(0, 4);
@@ -40,7 +40,7 @@ export function HomeScreen({q, setQ, items, busy, error, onSection, onOpen, onPr
       {sections.map(([key, label, icon]) => (
         <button key={key} type="button" className={'section-tile sector-' + key} onClick={() => onSection(key)}>
           <span className="tile-ico"><Icon name={icon || sectionIcons[key]} size={22} /></span>
-          <strong>{label}</strong>
+          <strong>{shortLabels[key] || label}</strong>
         </button>
       ))}
     </div>
@@ -50,7 +50,7 @@ export function HomeScreen({q, setQ, items, busy, error, onSection, onOpen, onPr
           <h2><Icon name="car" size={18} /> Vehicle Bids</h2>
           <button type="button" className="link" onClick={() => onSection('vehicle')}>View all ›</button>
         </div>
-        <div className="lot-rail">
+        <div className="m-grid">
           {vehicles.map((item) => <VehicleRailCard key={item.id} item={item} onOpen={onOpen} />)}
         </div>
       </div>}
@@ -60,6 +60,7 @@ export function HomeScreen({q, setQ, items, busy, error, onSection, onOpen, onPr
         </div>
         <ListingStack items={openNow} onOpen={onOpen} />
       </div>}
+      {error && (vehicles.length > 0 || openNow.length > 0) && <p role="alert" className="m-inline-error">{error}</p>}
       {!vehicles.length && !openNow.length && (
         <div className={'feed-empty' + (error ? ' is-error' : '')} role={error ? 'alert' : 'status'}>
           <strong>{busy ? 'Loading…' : error ? 'Listings unavailable' : 'No open lots'}</strong>
@@ -117,7 +118,7 @@ export function CatalogScreen({section, q, setQ, condition, setCondition, items,
           onClick={() => onSection(key)}
         >
           <span className="tile-ico"><Icon name={icon || sectionIcons[key]} size={22} /></span>
-          <strong>{label}</strong>
+          <strong>{shortLabels[key] || label}</strong>
         </button>
       ))}
     </div>
@@ -270,7 +271,7 @@ export function DetailScreen({item, api, me, saved, onBack, onSave, onSubscribe,
   </article>;
 }
 
-export function ProfileScreen({me, language, onLanguage, onSignIn, onSignOut, onAlerts, onSaved, onPlans, savedCount = 0}) {
+export function ProfileScreen({me, language, onLanguage, onSignIn, onSignOut, onAlerts, onSaved, onPlans, onStaff, savedCount = 0}) {
   return <section className="stitch-profile">
     <div className="profile-head">
       <div>
@@ -287,6 +288,7 @@ export function ProfileScreen({me, language, onLanguage, onSignIn, onSignOut, on
             <strong>{me?.email || 'Guest User'}</strong>
             {!me && <span className="badge browse-only">Browse-Only</span>}
             {me?.demo && <span className="badge demo">Local demo</span>}
+            {me?.admin && <span className="badge paid">Staff</span>}
             {me?.subscribed && <span className="badge paid">Subscriber</span>}
           </div>
           <p>{me
@@ -311,6 +313,11 @@ export function ProfileScreen({me, language, onLanguage, onSignIn, onSignOut, on
       </div>
       {!me && <button type="button" className="primary wide" onClick={onSignIn}>Sign in <Icon name="arrow" size={18} /></button>}
       {me && !me.subscribed && <button type="button" className="primary wide" onClick={onPlans}>View subscriptions <Icon name="arrow" size={18} /></button>}
+      {me?.admin && onStaff && (
+        <button type="button" className="primary wide" onClick={onStaff}>
+          Open staff console <Icon name="arrow" size={18} />
+        </button>
+      )}
       {me && onSignOut && <button type="button" className="outline wide" onClick={onSignOut}>Sign out</button>}
     </div>
     <div className="verify-banner">
@@ -547,7 +554,7 @@ export function PlansScreen({me, plans, plansError, payments, term, setTerm, ref
   return <section className="stitch-plans">
     <button type="button" className="text-back" onClick={onBack}><Icon name="back" size={18} /> Back</button>
     <div className="page-head"><h1 className="serif">Subscriptions</h1><span className="badge demo">DEMO</span></div>
-    <p className="plans-lead">Unlock paid tenders and vehicle bidding instructions. Purchase stays on the website — Android uses the same account after sign-in.</p>
+    <p className="plans-lead">Unlock paid tenders and vehicle bidding instructions. Purchase stays on the website — the iOS and Android apps use the same account after sign-in.</p>
     {me?.subscribed && (
       <div className="verify-banner">
         <Icon name="shield" size={18} />
@@ -602,3 +609,4 @@ export function PlansScreen({me, plans, plansError, payments, term, setTerm, ref
     </>}
   </section>;
 }
+

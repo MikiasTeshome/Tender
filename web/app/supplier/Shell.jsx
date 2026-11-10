@@ -1,8 +1,10 @@
-'use client';
+﻿'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { DeskNav, Dock, SiteFooter } from './components.jsx';
+import Admin from '../staff.jsx';
+import { Dock, SiteFooter } from './components.jsx';
+import { DeskCatalog, DeskDetail, DeskHeader, DeskHome, DeskSaved } from './desktop.jsx';
 import {
   AlertsScreen,
   AuthScreen,
@@ -13,7 +15,7 @@ import {
   ProfileScreen,
   SavedScreen,
 } from './screens.jsx';
-import { errorText, readRoute, writeRoute } from './utils.js';
+import { countListings, errorText, readRoute, useViewportMode, writeRoute } from './utils.js';
 import './supplier.css';
 
 const emptyFilters = {q: '', section: '', condition: ''};
@@ -39,6 +41,8 @@ export default function Shell({authUrl = '', authKey = ''}) {
   const [language, setLanguage] = useState('en');
   const [reference, setReference] = useState('');
   const [term, setTerm] = useState('');
+  const [allItems, setAllItems] = useState([]);
+  const mode = useViewportMode();
 
   const accessToken = session?.access_token;
   const account = me || demoMe;
@@ -140,6 +144,18 @@ export default function Shell({authUrl = '', authKey = ''}) {
       controller.abort();
     };
   }, [api, filters.q, filters.section, filters.condition]);
+
+  useEffect(() => {
+    let alive = true;
+    api('listings')
+      .then((result) => {
+        if (alive) setAllItems(result.items ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [api]);
 
   useEffect(() => {
     setDetail(null);
@@ -276,6 +292,12 @@ export default function Shell({authUrl = '', authKey = ''}) {
     if (route.screen === 'auth' && account) go('profile');
   }, [route.screen, account]);
 
+  useEffect(() => {
+    if (route.screen !== 'staff') return;
+    if (accessToken && !account && !demoMe) return;
+    if (!account?.admin) go(account ? 'profile' : 'auth');
+  }, [route.screen, account, accessToken, demoMe]);
+
   const shown = catalog.items.filter((item) => {
     if (filters.section === 'vehicle') {
       if (filters.condition && item.condition !== filters.condition) return false;
@@ -291,147 +313,89 @@ export default function Shell({authUrl = '', authKey = ''}) {
     ? saved.some((entry) => entry.id === route.bid)
     : demoSaved.some((entry) => entry.id === route.bid);
   const screen = route.bid ? 'detail' : route.screen;
+  const staffAllowed = !!account?.admin;
+  const counts = useMemo(() => countListings(allItems), [allItems]);
   const showDock = !route.bid && ['home', 'catalog', 'saved', 'alerts', 'profile', 'auth', 'plans'].includes(screen);
+  const desktop = mode === 'desktop';
+  const goBackFromDetail = () => go(filters.section ? 'catalog' : 'home', filters.section);
 
-  return <div className="supplier-root">
-    <DeskNav
-      screen={screen}
-      section={filters.section}
-      q={filters.q}
-      setQ={setQ}
+  function toggleSaveCurrent() {
+    if (accessToken) {
+      void run(async () => {
+        await api('saved/' + route.bid, {method: savedCurrent ? 'DELETE' : 'PUT'});
+        await refresh();
+      });
+      return;
+    }
+    if (demoMe) {
+      toggleDemoSave(route.bid);
+      return;
+    }
+    go('auth');
+  }
+
+  const sharedScreen = screen === 'auth' ? (
+    <AuthScreen client={client} onBack={() => go('profile')} onDemoSignIn={handleDemoSignIn} />
+  ) : screen === 'staff' ? (
+    staffAllowed
+      ? <Admin api={api} onBack={() => go('profile')} />
+      : <p role="status">Checking staff access…</p>
+  ) : screen === 'profile' ? (
+    <ProfileScreen
+      me={account}
       language={language}
       onLanguage={chooseLanguage}
-      me={account}
-      onHome={() => go('home')}
-      onVehicles={() => go('catalog', 'vehicle')}
-      onSaved={() => go('saved')}
-      onAlerts={() => go('alerts')}
-      onProfile={() => go('profile')}
       onSignIn={() => go('auth')}
+      onSignOut={handleSignOut}
+      onAlerts={() => go('alerts')}
+      onSaved={() => go('saved')}
+      onPlans={() => go('plans')}
+      onStaff={staffAllowed ? () => go('staff') : undefined}
+      savedCount={savedCount}
     />
-    <div className={'supplier-shell' + (route.bid ? ' has-detail-dock' : '') + (showDock ? ' has-dock' : '')}>
-      {status && (
-        <div role="status" className="callout alert">
-          {status}
-          <button type="button" aria-label="Dismiss message" onClick={() => setStatus('')}>×</button>
-        </div>
-      )}
+  ) : screen === 'plans' ? (
+    <PlansScreen
+      me={account}
+      plans={plans}
+      plansError={plansError}
+      payments={payments}
+      term={term}
+      setTerm={setTerm}
+      reference={reference}
+      setReference={setReference}
+      onAuth={() => go('auth')}
+      onBack={() => go('profile')}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!accessToken) {
+          setStatus(demoMe
+            ? 'Demo sign-in cannot submit payments. Configure Supabase for real verification.'
+            : 'Sign in to submit a payment reference.');
+          return;
+        }
+        void run(async () => {
+          await api('payments', {method: 'POST', data: {reference, months: term}});
+          setReference('');
+          setStatus('Payment reference submitted for staff verification.');
+          setPayments(await api('payments'));
+        });
+      }}
+    />
+  ) : screen === 'alerts' ? (
+    <AlertsScreen items={catalog.items} onOpen={open} onHome={() => go('home')} />
+  ) : null;
 
-      {route.bid ? (
-        detail
-          ? <DetailScreen
-              item={detail}
-              api={api}
-              me={account}
-              saved={savedCurrent}
-              onBack={() => go(filters.section ? 'catalog' : 'home', filters.section)}
-              onSave={() => {
-                if (accessToken) {
-                  void run(async () => {
-                    await api('saved/' + route.bid, {method: savedCurrent ? 'DELETE' : 'PUT'});
-                    await refresh();
-                  });
-                  return;
-                }
-                if (demoMe) {
-                  toggleDemoSave(route.bid);
-                  return;
-                }
-                go('auth');
-              }}
-              onSubscribe={() => go('plans')}
-              onSignIn={() => go('auth')}
-            />
-          : detailError
-            ? <div className="empty" role="alert">
-                <p>{detailError}</p>
-                <button type="button" className="outline" onClick={() => go(filters.section ? 'catalog' : 'home', filters.section)}>Back to listings</button>
-              </div>
-            : <p role="status">Loading opportunity…</p>
-      ) : screen === 'auth' ? (
-        <AuthScreen client={client} onBack={() => go('profile')} onDemoSignIn={handleDemoSignIn} />
-      ) : screen === 'profile' ? (
-        <ProfileScreen
-          me={account}
-          language={language}
-          onLanguage={chooseLanguage}
-          onSignIn={() => go('auth')}
-          onSignOut={handleSignOut}
-          onAlerts={() => go('alerts')}
-          onSaved={() => go('saved')}
-          onPlans={() => go('plans')}
-          savedCount={savedCount}
-        />
-      ) : screen === 'plans' ? (
-        <PlansScreen
-          me={account}
-          plans={plans}
-          plansError={plansError}
-          payments={payments}
-          term={term}
-          setTerm={setTerm}
-          reference={reference}
-          setReference={setReference}
-          onAuth={() => go('auth')}
-          onBack={() => go('profile')}
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!accessToken) {
-              setStatus(demoMe
-                ? 'Demo sign-in cannot submit payments. Configure Supabase for real verification.'
-                : 'Sign in to submit a payment reference.');
-              return;
-            }
-            void run(async () => {
-              await api('payments', {method: 'POST', data: {reference, months: term}});
-              setReference('');
-              setStatus('Payment reference submitted for staff verification.');
-              setPayments(await api('payments'));
-            });
-          }}
-        />
-      ) : screen === 'saved' ? (
-        <SavedScreen
-          items={savedItems}
-          guest={!me}
-          onOpen={open}
-          onRestore={() => setDemoSaved(catalog.items.slice(0, 2))}
-        />
-      ) : screen === 'alerts' ? (
-        <AlertsScreen items={catalog.items} onOpen={open} onHome={() => go('home')} />
-      ) : screen === 'catalog' ? (
-        <CatalogScreen
-          section={filters.section}
-          q={filters.q}
-          setQ={setQ}
-          condition={filters.condition}
-          setCondition={setCondition}
-          items={shown}
-          busy={busy}
-          error={loadError}
-          onSection={(key) => go('catalog', key)}
-          onOpen={open}
-          onHome={() => go('home')}
-          onProfile={() => go('profile')}
-          onAlerts={() => go('alerts')}
-        />
-      ) : (
-        <HomeScreen
-          q={filters.q}
-          setQ={setQ}
-          items={homeItems}
-          busy={busy}
-          error={loadError}
-          onSection={(key) => go('catalog', key)}
-          onOpen={open}
-          onProfile={() => go('profile')}
-        />
-      )}
+  const statusBar = status && (
+    <div role="status" className="callout alert">
+      {status}
+      <button type="button" aria-label="Dismiss message" onClick={() => setStatus('')}>×</button>
     </div>
+  );
 
+  const footer = (compact) => (
     <SiteFooter
       me={account}
-      compact={showDock || !!route.bid}
+      compact={compact}
       onHome={() => go('home')}
       onSection={(key) => go('catalog', key)}
       onSaved={() => go('saved')}
@@ -439,6 +403,161 @@ export default function Shell({authUrl = '', authKey = ''}) {
       onProfile={() => go('profile')}
       onSignIn={() => go('auth')}
     />
+  );
+
+  if (!mode) {
+    return <div className="supplier-root" aria-busy="true"><div className="supplier-shell"><p role="status">Loading…</p></div></div>;
+  }
+
+  if (desktop) {
+    let body;
+    if (route.bid) {
+      body = detail
+        ? <DeskDetail
+            key={detail.id}
+            item={detail}
+            api={api}
+            me={account}
+            saved={savedCurrent}
+            section={filters.section}
+            onBack={() => go('home')}
+            onSection={(key) => go('catalog', key)}
+            onSave={toggleSaveCurrent}
+            onSubscribe={() => go('plans')}
+            onSignIn={() => go('auth')}
+          />
+        : detailError
+          ? <div className="dx-empty" role="alert"><strong>{detailError}</strong>
+              <button type="button" className="dx-link" onClick={goBackFromDetail}>Back to listings</button></div>
+          : <p role="status">Loading opportunity…</p>;
+    } else if (sharedScreen) {
+      body = <div className="dx-narrow">{sharedScreen}</div>;
+    } else if (screen === 'saved') {
+      body = (
+        <DeskSaved
+          items={savedItems}
+          guest={!me}
+          onOpen={open}
+          onRestore={() => setDemoSaved(catalog.items.slice(0, 2))}
+          onHome={() => go('home')}
+        />
+      );
+    } else if (screen === 'catalog') {
+      body = (
+        <DeskCatalog
+          section={filters.section}
+          q={filters.q}
+          condition={filters.condition}
+          setCondition={setCondition}
+          items={shown}
+          counts={counts}
+          busy={busy}
+          error={loadError}
+          onSection={(key) => go('catalog', key)}
+          onOpen={open}
+          onHome={() => go('home')}
+        />
+      );
+    } else {
+      body = (
+        <DeskHome
+          items={allItems.length ? allItems : homeItems}
+          counts={counts}
+          busy={busy}
+          error={loadError}
+          onSection={(key) => go('catalog', key)}
+          onOpen={open}
+        />
+      );
+    }
+    return <div className="supplier-root is-desktop">
+      <DeskHeader
+        q={filters.q}
+        setQ={setQ}
+        section={filters.section}
+        counts={counts}
+        screen={screen}
+        language={language}
+        onLanguage={chooseLanguage}
+        me={account}
+        savedCount={savedCount}
+        onHome={() => go('home')}
+        onSection={(key) => go('catalog', key)}
+        onSaved={() => go('saved')}
+        onAlerts={() => go('alerts')}
+        onPlans={() => go('plans')}
+        onProfile={() => go('profile')}
+        onSignIn={() => go('auth')}
+        onStaff={() => go('staff')}
+      />
+      <main className="dx-shell">
+        {statusBar}
+        {body}
+      </main>
+      {footer(false)}
+    </div>;
+  }
+
+  return <div className="supplier-root is-phoneweb">
+    <div className={'supplier-shell' + (route.bid ? ' has-detail-dock' : '') + (showDock ? ' has-dock' : '')}>
+      {statusBar}
+      {route.bid ? (
+        detail
+          ? <DetailScreen
+              item={detail}
+              api={api}
+              me={account}
+              saved={savedCurrent}
+              onBack={goBackFromDetail}
+              onSave={toggleSaveCurrent}
+              onSubscribe={() => go('plans')}
+              onSignIn={() => go('auth')}
+            />
+          : detailError
+            ? <div className="empty" role="alert">
+                <p>{detailError}</p>
+                <button type="button" className="outline" onClick={goBackFromDetail}>Back to listings</button>
+              </div>
+            : <p role="status">Loading opportunity…</p>
+      ) : sharedScreen ? sharedScreen
+        : screen === 'saved' ? (
+          <SavedScreen
+            items={savedItems}
+            guest={!me}
+            onOpen={open}
+            onRestore={() => setDemoSaved(catalog.items.slice(0, 2))}
+          />
+        ) : screen === 'catalog' ? (
+          <CatalogScreen
+            section={filters.section}
+            q={filters.q}
+            setQ={setQ}
+            condition={filters.condition}
+            setCondition={setCondition}
+            items={shown}
+            busy={busy}
+            error={loadError}
+            onSection={(key) => go('catalog', key)}
+            onOpen={open}
+            onHome={() => go('home')}
+            onProfile={() => go('profile')}
+            onAlerts={() => go('alerts')}
+          />
+        ) : (
+          <HomeScreen
+            q={filters.q}
+            setQ={setQ}
+            items={homeItems}
+            busy={busy}
+            error={loadError}
+            onSection={(key) => go('catalog', key)}
+            onOpen={open}
+            onProfile={() => go('profile')}
+          />
+        )}
+    </div>
+
+    {footer(showDock || !!route.bid)}
 
     {showDock && (
       <Dock
@@ -452,3 +571,4 @@ export default function Shell({authUrl = '', authKey = ''}) {
     )}
   </div>;
 }
+

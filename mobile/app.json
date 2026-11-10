@@ -1,1 +1,21 @@
-{"expo":{"name":"Bid Ethiopia","slug":"bid-ethiopia","scheme":"bidethiopia","version":"1.0.0","android":{"package":"com.bidethiopia.app"},"plugins":["expo-notifications","expo-secure-store"]}}
+{
+  "expo": {
+    "name": "Bid Ethiopia",
+    "slug": "bid-ethiopia",
+    "scheme": "bidethiopia",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "com.bidethiopia.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.bidethiopia.app"
+    },
+    "plugins": [
+      "expo-notifications",
+      "expo-secure-store"
+    ]
+  }
+}
