@@ -5,38 +5,37 @@ import { Icon, sectionIcons } from '../stitch-ui.jsx';
 import { AccessBadge, ListingStack, Photo, VehicleRailCard } from './components.jsx';
 import { cleanTitle, conditionLabel, demoEmails, errorText, formatDeadline, sections, terms } from './utils.js';
 
-export function HomeScreen({q, setQ, items, onSection, onOpen, onProfile}) {
+export function HomeScreen({q, setQ, items, busy, error, onSection, onOpen, onProfile}) {
   const vehicles = items.filter((item) => item.vehicle).slice(0, 4);
   const openNow = items.filter((item) => !item.vehicle);
   return <section className="catalog is-home">
-    <div className="app-home-bar phone-only">
-      <div className="page-head">
-        <p className="phone-brand">Bid Ethiopia</p>
-        <span className="badge demo">DEMO</span>
+    <div className="phone-top phone-only">
+      <div className="app-home-bar">
+        <div className="page-head">
+          <p className="phone-brand">Bid Ethiopia</p>
+          <span className="badge demo">DEMO</span>
+        </div>
+        <button type="button" className="avatar-btn" onClick={onProfile} aria-label="Profile">
+          <span className="avatar"><Icon name="user" size={20} /></span>
+        </button>
       </div>
-      <button type="button" className="avatar-btn" onClick={onProfile} aria-label="Profile">
-        <span className="avatar"><Icon name="user" size={20} /></span>
-      </button>
-    </div>
-    <div className="search-wrap phone-only">
-      <Icon name="search" size={18} />
-      <input
-        type="search"
-        aria-label="Search Ethiopian tenders & auctions"
-        placeholder="Search Ethiopian tenders & auctions..."
-        value={q}
-        onChange={(event) => setQ(event.target.value)}
-      />
+      <div className="search-wrap">
+        <Icon name="search" size={18} />
+        <input
+          type="search"
+          aria-label="Search Ethiopian tenders & auctions"
+          placeholder="Search Ethiopian tenders & auctions..."
+          value={q}
+          onChange={(event) => setQ(event.target.value)}
+        />
+      </div>
     </div>
     <div className="desk-home-intro desk-only">
       <div>
-        <p className="eyebrow">Procurement directory · Ethiopia</p>
         <h1 className="serif desk-home-title">Bid Ethiopia</h1>
         <p className="desk-home-tagline">Find a bid. Judge the lot. Bid with the issuer.</p>
       </div>
-      <p className="desk-home-lead">Search public, NGO, private, and vehicle opportunities. Closing times are in EAT. DEMO listings are labeled.</p>
     </div>
-    <h2 className="section-label">Categories</h2>
     <div className="section-tiles">
       {sections.map(([key, label, icon]) => (
         <button key={key} type="button" className={'section-tile sector-' + key} onClick={() => onSection(key)}>
@@ -49,16 +48,24 @@ export function HomeScreen({q, setQ, items, onSection, onOpen, onProfile}) {
       {!!vehicles.length && <div className="home-strip">
         <div className="strip-head">
           <h2><Icon name="car" size={18} /> Vehicle Bids</h2>
-          <button type="button" className="link" onClick={() => onSection('vehicle')}>View All ›</button>
+          <button type="button" className="link" onClick={() => onSection('vehicle')}>View all ›</button>
         </div>
         <div className="lot-rail">
           {vehicles.map((item) => <VehicleRailCard key={item.id} item={item} onOpen={onOpen} />)}
         </div>
       </div>}
       {!!openNow.length && <div className="home-open-now">
-        <h2 className="section-label">Open now</h2>
+        <div className="strip-head">
+          <h2 className="section-label">Open now</h2>
+        </div>
         <ListingStack items={openNow} onOpen={onOpen} />
       </div>}
+      {!vehicles.length && !openNow.length && (
+        <div className={'feed-empty' + (error ? ' is-error' : '')} role={error ? 'alert' : 'status'}>
+          <strong>{busy ? 'Loading…' : error ? 'Listings unavailable' : 'No open lots'}</strong>
+          <p>{error || (busy ? 'Fetching tenders and vehicles.' : 'Check back soon for active bids.')}</p>
+        </div>
+      )}
     </div>
   </section>;
 }
@@ -101,7 +108,6 @@ export function CatalogScreen({section, q, setQ, condition, setCondition, items,
         onChange={(event) => setQ(event.target.value)}
       />
     </div>
-    <h2 className="section-label phone-only">Categories</h2>
     <div className="section-tiles catalog-tiles" aria-label="Categories">
       {sections.map(([key, label, icon]) => (
         <button

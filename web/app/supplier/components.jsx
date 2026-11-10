@@ -18,6 +18,8 @@ export function VehicleRailCard({item, onOpen}) {
         {conditionLabel(item.condition)}
       </span>
       <span className="bookmark-fab" aria-hidden="true"><Icon name="bookmark" size={16} /></span>
+      {item.details?.lot && <span className="lot-overlay">Lot #{item.details.lot}</span>}
+      <span className="place-overlay">{item.region || item.details?.location || 'Ethiopia'}</span>
     </button>
     <div className="vehicle-rail-body">
       <p className="rail-meta">
@@ -36,7 +38,7 @@ export function VehicleRailCard({item, onOpen}) {
 }
 
 export function TenderCard({item, onOpen}) {
-  return <article className="tender-list-card">
+  return <article className={'tender-list-card' + (item.access === 'paid' ? ' is-paid' : '')}>
     <div className="tender-list-top">
       <AccessBadge item={item} />
       <span className="badge demo">DEMO</span>
@@ -48,9 +50,8 @@ export function TenderCard({item, onOpen}) {
       <p className="lot-place"><Icon name="pin" size={14} /> {item.region || item.details?.location}</p>
     )}
     <div className="deadline-bar mint">
-      <Icon name="clock" size={14} /> Closing: {formatDeadline(item.deadline)} EAT
+      <Icon name="clock" size={14} /> Closing {formatDeadline(item.deadline)} EAT
     </div>
-    <div className="sourced-row"><Icon name="shield" size={14} /> Sourced Directly</div>
     <button type="button" className="primary wide" onClick={() => onOpen(item.id)}>
       View Tender →
     </button>
@@ -189,58 +190,32 @@ export function SiteFooter({
   onHome,
   onSection,
   onSaved,
-  onAlerts,
   onPlans,
   onProfile,
   onSignIn,
   compact = false,
 }) {
   return <footer className={'site-footer' + (compact ? ' has-dock-clearance' : '')}>
-    <div className="site-footer-inner">
-      <div className="site-footer-brand">
-        <button type="button" className="site-footer-logo" onClick={onHome}>
-          <span className="desk-mark"><Icon name="gavel" size={18} /></span>
-          <span>
-            <strong>Bid Ethiopia</strong>
-            <span className="badge demo">DEMO</span>
-          </span>
-        </button>
-        <p>Find a tender or vehicle lot, judge the notice, then bid with the issuer. Closing times shown in East Africa Time.</p>
-      </div>
-      <div className="site-footer-cols">
-        <div>
-          <h2>Browse</h2>
-          <ul>
-            {sections.map(([key, label]) => (
-              <li key={key}>
-                <button type="button" onClick={() => onSection(key)}>{label}</button>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <h2>Account</h2>
-          <ul>
-            <li><button type="button" onClick={me ? onProfile : onSignIn}>{me ? 'My account' : 'Sign in'}</button></li>
-            <li><button type="button" onClick={onPlans}>Subscriptions</button></li>
-            <li><button type="button" onClick={onSaved}>Saved lots</button></li>
-            <li><button type="button" onClick={onAlerts}>Alerts</button></li>
-          </ul>
-        </div>
-        <div>
-          <h2>Directory</h2>
-          <ul className="site-footer-meta">
-            <li>Timezone · EAT (UTC+3)</li>
-            <li>Listings labeled DEMO</li>
-            <li>Purchase on the website</li>
-            <li>Android uses the same account</li>
-          </ul>
-        </div>
-      </div>
+    <div className="site-footer-inner site-footer-slim">
+      <button type="button" className="site-footer-logo" onClick={onHome}>
+        <span className="desk-mark"><Icon name="gavel" size={18} /></span>
+        <span>
+          <strong>Bid Ethiopia</strong>
+          <span className="badge demo">DEMO</span>
+        </span>
+      </button>
+      <nav className="site-footer-links" aria-label="Footer">
+        {sections.map(([key, label]) => (
+          <button type="button" key={key} onClick={() => onSection(key)}>{label}</button>
+        ))}
+        <button type="button" onClick={onSaved}>Saved</button>
+        <button type="button" onClick={onPlans}>Subscriptions</button>
+        <button type="button" onClick={me ? onProfile : onSignIn}>{me ? 'Account' : 'Sign in'}</button>
+      </nav>
     </div>
     <div className="site-footer-bar">
-      <p>© 2026 Bid Ethiopia · Informational procurement directory prototype</p>
-      <p>Not affiliated with any issuer. Bidding happens with the issuer, not on this site.</p>
+      <p>© 2026 Bid Ethiopia · Closings in EAT</p>
+      <p>Bid with the issuer — not on this site</p>
     </div>
   </footer>;
 }

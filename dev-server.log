@@ -2,487 +2,13 @@
 - Local:         http://127.0.0.1:3000
 - Network:       http://127.0.0.1:3000
 - Environments: .env.local
-✓ Ready in 1417ms
-✓ Running next.config.mjs took 27ms
+✓ Ready in 1710ms
+✓ Running next.config.mjs took 66ms
 - Experiments (use with caution):
   ✓ externalDir
 
- GET / 200 in 431ms (next.js: 204ms, application-code: 227ms)
-API error ECONNREFUSED
- GET /api/listings 503 in 1117ms (next.js: 991ms, application-code: 126ms)
-API error ECONNREFUSED
- GET /api/listings 503 in 38ms (next.js: 24ms, application-code: 14ms)
-✓ Compiled in 71ms
- GET /api/listings 200 in 185ms (next.js: 20ms, application-code: 164ms)
- GET / 200 in 122ms (next.js: 7ms, application-code: 115ms)
- GET /api/listings? 200 in 90ms (next.js: 25ms, application-code: 64ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 56ms (next.js: 3ms, application-code: 53ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 152ms (next.js: 3ms, application-code: 149ms)
- GET /api/listings? 200 in 19ms (next.js: 3ms, application-code: 16ms)
- GET /api/listings?section=public 200 in 74ms (next.js: 14ms, application-code: 60ms)
- GET /api/listings? 200 in 69ms (next.js: 10ms, application-code: 59ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 29ms (next.js: 4ms, application-code: 25ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 50ms (next.js: 2ms, application-code: 48ms)
- GET / 200 in 157ms (next.js: 50ms, application-code: 107ms)
- GET /api/listings? 200 in 31ms (next.js: 15ms, application-code: 16ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 35ms (next.js: 3ms, application-code: 32ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 23ms (next.js: 3ms, application-code: 20ms)
- GET /api/listings? 200 in 11ms (next.js: 1.7ms, application-code: 10ms)
- GET /api/listings? 200 in 47ms (next.js: 19ms, application-code: 28ms)
- GET /api/listings 200 in 81ms (next.js: 18ms, application-code: 62ms)
- GET /api/listings?section=public 200 in 56ms (next.js: 2ms, application-code: 53ms)
- GET /api/listings?section=vehicle 200 in 158ms (next.js: 2ms, application-code: 156ms)
-✓ Compiled in 85ms
-[browser] The final argument passed to useEffect changed size between renders. The order and size of this array must remain constant.
-
-Previous: [async (path, options = {})=>{
-            const { data, binary, ...init } = options;
-            const headers = new Headers(init.headers);
-            if (accessToken) headers.set('Authorization', 'Bearer ' + accessToken);
-            if (data && !(data instanceof FormData)) headers.set('Content-Type', 'application/json');
-            const response = await fetch('/api/' + path, {
-                ...init,
-                headers,
-                body: data instanceof FormData ? data : data ? JSON.stringify(data) : undefined
-            });
-            if (!response.ok) throw new Error((await response.json().catch({
-                "Shell.useCallback[api]": ()=>({})
-            }["Shell.useCallback[api]"])).error ?? 'Request failed.');
-            return binary ? response.blob() : response.json();
-        }, , vehicle, 2]
-Incoming: [async (path, options = {})=>{
-            const { data, binary, ...init } = options;
-            const headers = new Headers(init.headers);
-            if (accessToken) headers.set('Authorization', 'Bearer ' + accessToken);
-            if (data && !(data instanceof FormData)) headers.set('Content-Type', 'application/json');
-            const response = await fetch('/api/' + path, {
-                ...init,
-                headers,
-                body: data instanceof FormData ? data : data ? JSON.stringify(data) : undefined
-            });
-            if (!response.ok) throw new Error((await response.json().catch({
-                "Shell.useCallback[api]": ()=>({})
-            }["Shell.useCallback[api]"])).error ?? 'Request failed.');
-            return binary ? response.blob() : response.json();
-        }, , vehicle, , 2] 
-    at Shell (app/supplier/Shell.jsx:94:12)
-    at Set.forEach (<anonymous>)
-  92 |   }, [route.screen, me]);
-  93 |
-> 94 |   useEffect(() => {
-     |            ^
-  95 |     const controller = new AbortController();
-  96 |     const timer = setTimeout(async () => {
-  97 |       setBusy(true); (app/supplier/Shell.jsx:94:12)
- GET /api/listings?section=vehicle 200 in 84ms (next.js: 22ms, application-code: 62ms)
- GET /api/listings?section=vehicle 200 in 28ms (next.js: 3ms, application-code: 24ms)
-✓ Compiled in 33ms
- GET /api/listings?section=vehicle 200 in 24ms (next.js: 3ms, application-code: 21ms)
- GET /api/listings?section=vehicle 200 in 17ms (next.js: 4ms, application-code: 13ms)
-✓ Compiled in 49ms
- GET /api/listings?section=vehicle 200 in 30ms (next.js: 14ms, application-code: 16ms)
- GET /api/listings?section=vehicle 200 in 15ms (next.js: 3ms, application-code: 13ms)
-[browser] The final argument passed to useEffect changed size between renders. The order and size of this array must remain constant.
-
-Previous: [async (path, options = {})=>{
-            const { data, binary, ...init } = options;
-            const headers = new Headers(init.headers);
-            if (accessToken) headers.set('Authorization', 'Bearer ' + accessToken);
-            if (data && !(data instanceof FormData)) headers.set('Content-Type', 'application/json');
-            const response = await fetch('/api/' + path, {
-                ...init,
-                headers,
-                body: data instanceof FormData ? data : data ? JSON.stringify(data) : undefined
-            });
-            if (!response.ok) throw new Error((await response.json().catch({
-                "Shell.useCallback[api]": ()=>({})
-            }["Shell.useCallback[api]"])).error ?? 'Request failed.');
-            return binary ? response.blob() : response.json();
-        }, , vehicle, 2]
-Incoming: [async (path, options = {})=>{
-            const { data, binary, ...init } = options;
-            const headers = new Headers(init.headers);
-            if (accessToken) headers.set('Authorization', 'Bearer ' + accessToken);
-            if (data && !(data instanceof FormData)) headers.set('Content-Type', 'application/json');
-            const response = await fetch('/api/' + path, {
-                ...init,
-                headers,
-                body: data instanceof FormData ? data : data ? JSON.stringify(data) : undefined
-            });
-            if (!response.ok) throw new Error((await response.json().catch({
-                "Shell.useCallback[api]": ()=>({})
-            }["Shell.useCallback[api]"])).error ?? 'Request failed.');
-            return binary ? response.blob() : response.json();
-        }, , vehicle, , 2] 
-    at Shell (app/supplier/Shell.jsx:94:12)
-    at Set.forEach (<anonymous>)
-  92 |   }, [route.screen, me]);
-  93 |
-> 94 |   useEffect(() => {
-     |            ^
-  95 |     const controller = new AbortController();
-  96 |     const timer = setTimeout(async () => {
-  97 |       setBusy(true); (app/supplier/Shell.jsx:94:12)
- GET /?screen=catalog&section=vehicle 200 in 96ms (next.js: 5ms, application-code: 91ms)
- GET /api/listings? 200 in 72ms (next.js: 17ms, application-code: 55ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 45ms (next.js: 15ms, application-code: 30ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 53ms (next.js: 3ms, application-code: 51ms)
- GET /api/listings? 200 in 18ms (next.js: 3ms, application-code: 15ms)
-✓ Compiled in 40ms
- GET /api/listings? 200 in 41ms (next.js: 12ms, application-code: 29ms)
- GET /api/listings?section=vehicle 200 in 22ms (next.js: 3ms, application-code: 18ms)
- GET /api/listings?section=vehicle 200 in 167ms (next.js: 14ms, application-code: 152ms)
- GET / 200 in 116ms (next.js: 6ms, application-code: 110ms)
- GET /api/listings? 200 in 100ms (next.js: 25ms, application-code: 75ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 39ms (next.js: 2ms, application-code: 36ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 59ms (next.js: 4ms, application-code: 56ms)
- GET /api/listings? 200 in 19ms (next.js: 3ms, application-code: 16ms)
- GET /api/listings?section=vehicle 200 in 65ms (next.js: 13ms, application-code: 52ms)
-✓ Compiled in 26ms
- GET /api/listings?section=vehicle 200 in 36ms (next.js: 22ms, application-code: 14ms)
- GET /api/listings?section=vehicle 200 in 25ms (next.js: 4ms, application-code: 21ms)
- GET /api/listings/8d0813e3-d226-43e4-bcd4-ec2b3d276a84 200 in 119ms (next.js: 86ms, application-code: 33ms)
- GET /api/photos/76332b74-0772-4f1e-9ba5-bfbb3bb9ee12 200 in 17ms (next.js: 2ms, application-code: 14ms)
- GET /api/photos/76332b74-0772-4f1e-9ba5-bfbb3bb9ee12 200 in 18ms (next.js: 2ms, application-code: 16ms)
- GET /api/listings/8d0813e3-d226-43e4-bcd4-ec2b3d276a84 200 in 28ms (next.js: 15ms, application-code: 13ms)
- GET /?screen=saved 200 in 106ms (next.js: 6ms, application-code: 100ms)
- GET /api/listings? 200 in 107ms (next.js: 19ms, application-code: 88ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 20ms (next.js: 3ms, application-code: 17ms)
- GET /api/listings? 200 in 17ms (next.js: 3ms, application-code: 14ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 66ms (next.js: 16ms, application-code: 51ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 55ms (next.js: 2ms, application-code: 53ms)
- GET /api/listings? 200 in 14ms (next.js: 1.8ms, application-code: 12ms)
- GET /api/listings 200 in 68ms (next.js: 18ms, application-code: 50ms)
-✓ Compiled in 35ms
- GET /api/listings? 200 in 67ms (next.js: 14ms, application-code: 53ms)
- GET /api/listings? 200 in 15ms (next.js: 2ms, application-code: 13ms)
-✓ Compiled in 75ms
-✓ Compiled in 58ms
-✓ Compiled in 35ms
- GET /api/listings? 200 in 69ms (next.js: 17ms, application-code: 52ms)
- GET /api/listings? 200 in 50ms (next.js: 2ms, application-code: 47ms)
-✓ Compiled in 56ms
-✓ Compiled in 20ms
-✓ Compiled in 15ms
-✓ Compiled in 16ms
- GET / 200 in 107ms (next.js: 4ms, application-code: 103ms)
- GET / 200 in 85ms (next.js: 3ms, application-code: 82ms)
- GET /api/listings? 200 in 65ms (next.js: 16ms, application-code: 49ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 31ms (next.js: 3ms, application-code: 29ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 157ms (next.js: 3ms, application-code: 154ms)
- GET /api/listings? 200 in 12ms (next.js: 2ms, application-code: 10ms)
- GET / 200 in 87ms (next.js: 3ms, application-code: 84ms)
- GET /api/listings? 200 in 66ms (next.js: 14ms, application-code: 52ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 35ms (next.js: 3ms, application-code: 32ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 75ms (next.js: 3ms, application-code: 72ms)
- GET /api/listings? 200 in 16ms (next.js: 1.7ms, application-code: 14ms)
- GET / 200 in 87ms (next.js: 3ms, application-code: 85ms)
- GET /api/listings? 200 in 61ms (next.js: 15ms, application-code: 46ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 25ms (next.js: 1.8ms, application-code: 24ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 44ms (next.js: 3ms, application-code: 41ms)
- GET /api/listings? 200 in 15ms (next.js: 2ms, application-code: 12ms)
- GET /api/listings?section=public 200 in 63ms (next.js: 18ms, application-code: 45ms)
- GET /?screen=catalog&section=public 200 in 84ms (next.js: 3ms, application-code: 81ms)
- GET /api/listings?section=public 200 in 26ms (next.js: 13ms, application-code: 13ms)
- GET /api/listings?section=public 200 in 16ms (next.js: 3ms, application-code: 13ms)
- GET /api/listings?section=vehicle 200 in 27ms (next.js: 14ms, application-code: 12ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 29ms (next.js: 2ms, application-code: 27ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 63ms (next.js: 2ms, application-code: 61ms)
- GET /?screen=catalog&section=vehicle 200 in 84ms (next.js: 2ms, application-code: 82ms)
- GET /api/listings?section=vehicle 200 in 34ms (next.js: 17ms, application-code: 17ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 27ms (next.js: 3ms, application-code: 24ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 16ms (next.js: 3ms, application-code: 13ms)
- GET /api/listings?section=vehicle 200 in 13ms (next.js: 2ms, application-code: 10ms)
- GET /api/listings?section=vehicle&condition=salvage 200 in 46ms (next.js: 14ms, application-code: 31ms)
- GET /api/listings? 200 in 33ms (next.js: 17ms, application-code: 16ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 28ms (next.js: 4ms, application-code: 24ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 16ms (next.js: 3ms, application-code: 13ms)
- GET /api/listings?section=public 200 in 62ms (next.js: 14ms, application-code: 49ms)
-✓ Compiled in 55ms
-✓ Compiled in 154ms
-✓ Compiled in 31ms
-✓ Compiled in 22ms
-✓ Compiled in 21ms
-✓ Compiled in 111ms
-✓ Compiled in 23ms
- GET /?screen=catalog&section=public 200 in 152ms (next.js: 12ms, application-code: 140ms)
- GET /api/listings?section=public 200 in 128ms (next.js: 27ms, application-code: 101ms)
- GET /api/listings?section=public 200 in 25ms (next.js: 5ms, application-code: 20ms)
- GET /api/listings?section=public 200 in 29ms (next.js: 13ms, application-code: 15ms)
- GET /?screen=catalog&section=public 200 in 109ms (next.js: 3ms, application-code: 106ms)
- GET /api/listings?section=public 200 in 74ms (next.js: 17ms, application-code: 57ms)
- GET /api/listings?section=public 200 in 15ms (next.js: 2ms, application-code: 13ms)
-✓ Compiled in 20ms
-✓ Compiled in 22ms
- GET /?screen=catalog&section=public 200 in 99ms (next.js: 3ms, application-code: 96ms)
- GET /api/listings?section=public 200 in 78ms (next.js: 18ms, application-code: 60ms)
- GET /api/listings?section=public 200 in 16ms (next.js: 2ms, application-code: 13ms)
-✓ Compiled in 44ms
-✓ Compiled in 37ms
-✓ Compiled in 22ms
- GET /api/listings?section=public 200 in 106ms (next.js: 15ms, application-code: 91ms)
- GET /api/listings?section=public 200 in 88ms (next.js: 3ms, application-code: 85ms)
- GET / 200 in 94ms (next.js: 6ms, application-code: 88ms)
- GET /api/listings? 200 in 27ms (next.js: 4ms, application-code: 23ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 38ms (next.js: 4ms, application-code: 35ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 22ms (next.js: 4ms, application-code: 19ms)
- GET /api/listings? 200 in 17ms (next.js: 3ms, application-code: 13ms)
- GET /api/listings?section=public 200 in 29ms (next.js: 14ms, application-code: 15ms)
-✓ Compiled in 69ms
-✓ Compiled in 14ms
-✓ Compiled in 16ms
- GET /?screen=catalog&section=public 200 in 149ms (next.js: 12ms, application-code: 136ms)
- GET /api/listings?section=public 200 in 182ms (next.js: 14ms, application-code: 168ms)
- GET /api/listings?section=public 200 in 18ms (next.js: 3ms, application-code: 14ms)
-✓ Compiled in 31ms
-[browser] The final argument passed to useEffect changed size between renders. The order and size of this array must remain constant.
-
-Previous: [async (path, options = {})=>{
-            const { data, binary, ...init } = options;
-            const headers = new Headers(init.headers);
-            if (accessToken) headers.set('Authorization', 'Bearer ' + accessToken);
-            if (data && !(data instanceof FormData)) headers.set('Content-Type', 'application/json');
-            const response = await fetch('/api/' + path, {
-                ...init,
-                headers,
-                body: data instanceof FormData ? data : data ? JSON.stringify(data) : undefined
-            });
-            if (!response.ok) throw new Error((await response.json().catch({
-                "Shell.useCallback[api]": ()=>({})
-            }["Shell.useCallback[api]"])).error ?? 'Request failed.');
-            return binary ? response.blob() : response.json();
-        }, , public, , 1]
-Incoming: [async (path, options = {})=>{
-            const { data, binary, ...init } = options;
-            const headers = new Headers(init.headers);
-            if (accessToken) headers.set('Authorization', 'Bearer ' + accessToken);
-            if (data && !(data instanceof FormData)) headers.set('Content-Type', 'application/json');
-            const response = await fetch('/api/' + path, {
-                ...init,
-                headers,
-                body: data instanceof FormData ? data : data ? JSON.stringify(data) : undefined
-            });
-            if (!response.ok) throw new Error((await response.json().catch({
-                "Shell.useCallback[api]": ()=>({})
-            }["Shell.useCallback[api]"])).error ?? 'Request failed.');
-            return binary ? response.blob() : response.json();
-        }, , public, ] 
-    at Shell (app/supplier/Shell.jsx:107:12)
-    at Set.forEach (<anonymous>)
-  105 |   }, [route.screen, me]);
-  106 |
-> 107 |   useEffect(() => {
-      |            ^
-  108 |     const controller = new AbortController();
-  109 |     let alive = true;
-  110 |     const timer = setTimeout(async () => { (app/supplier/Shell.jsx:107:12)
- GET /?screen=catalog&section=public 200 in 136ms (next.js: 4ms, application-code: 132ms)
- GET /api/listings?section=public 200 in 76ms (next.js: 19ms, application-code: 56ms)
- GET /api/listings?section=public 200 in 17ms (next.js: 3ms, application-code: 13ms)
- GET /api/listings?section=public 200 in 31ms (next.js: 15ms, application-code: 16ms)
-✓ Compiled in 33ms
-[browser] The final argument passed to useEffect changed size between renders. The order and size of this array must remain constant.
-
-Previous: [async (path, options = {})=>{
-            const { data, binary, ...init } = options;
-            const headers = new Headers(init.headers);
-            if (accessToken) headers.set('Authorization', 'Bearer ' + accessToken);
-            if (data && !(data instanceof FormData)) headers.set('Content-Type', 'application/json');
-            const response = await fetch('/api/' + path, {
-                ...init,
-                headers,
-                body: data instanceof FormData ? data : data ? JSON.stringify(data) : undefined
-            });
-            if (!response.ok) throw new Error((await response.json().catch({
-                "Shell.useCallback[api]": ()=>({})
-            }["Shell.useCallback[api]"])).error ?? 'Request failed.');
-            return binary ? response.blob() : response.json();
-        }, , public, , 1]
-Incoming: [async (path, options = {})=>{
-            const { data, binary, ...init } = options;
-            const headers = new Headers(init.headers);
-            if (accessToken) headers.set('Authorization', 'Bearer ' + accessToken);
-            if (data && !(data instanceof FormData)) headers.set('Content-Type', 'application/json');
-            const response = await fetch('/api/' + path, {
-                ...init,
-                headers,
-                body: data instanceof FormData ? data : data ? JSON.stringify(data) : undefined
-            });
-            if (!response.ok) throw new Error((await response.json().catch({
-                "Shell.useCallback[api]": ()=>({})
-            }["Shell.useCallback[api]"])).error ?? 'Request failed.');
-            return binary ? response.blob() : response.json();
-        }, , public, ] 
-    at Shell (app/supplier/Shell.jsx:107:12)
-    at Set.forEach (<anonymous>)
-  105 |   }, [route.screen, me]);
-  106 |
-> 107 |   useEffect(() => {
-      |            ^
-  108 |     const controller = new AbortController();
-  109 |     let alive = true;
-  110 |     const timer = setTimeout(async () => { (app/supplier/Shell.jsx:107:12)
- GET /api/listings?section=ngo 200 in 194ms (next.js: 28ms, application-code: 166ms)
- GET /api/listings?section=private 200 in 17ms (next.js: 2ms, application-code: 15ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 38ms (next.js: 16ms, application-code: 21ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 18ms (next.js: 4ms, application-code: 14ms)
- GET /api/listings?section=vehicle 200 in 19ms (next.js: 3ms, application-code: 16ms)
- GET /api/listings?section=public 200 in 34ms (next.js: 19ms, application-code: 15ms)
- GET /api/listings?section=ngo 200 in 36ms (next.js: 22ms, application-code: 14ms)
- GET /api/listings?section=private 200 in 38ms (next.js: 22ms, application-code: 16ms)
- GET /api/listings?section=vehicle 200 in 36ms (next.js: 19ms, application-code: 17ms)
- GET /api/listings?section=public 200 in 37ms (next.js: 19ms, application-code: 18ms)
- GET /api/listings?section=ngo 200 in 84ms (next.js: 16ms, application-code: 68ms)
- GET /api/listings? 200 in 34ms (next.js: 16ms, application-code: 18ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 37ms (next.js: 3ms, application-code: 34ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 67ms (next.js: 5ms, application-code: 63ms)
- GET /api/listings?section=vehicle 200 in 20ms (next.js: 3ms, application-code: 17ms)
- GET /api/listings? 200 in 42ms (next.js: 21ms, application-code: 21ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 47ms (next.js: 18ms, application-code: 29ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 21ms (next.js: 4ms, application-code: 18ms)
- GET /api/listings?section=public 200 in 76ms (next.js: 18ms, application-code: 58ms)
- GET /api/listings? 200 in 33ms (next.js: 16ms, application-code: 16ms)
- GET /api/listings?section=public 200 in 49ms (next.js: 7ms, application-code: 43ms)
- GET /api/listings? 200 in 122ms (next.js: 17ms, application-code: 105ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 20ms (next.js: 3ms, application-code: 18ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 22ms (next.js: 3ms, application-code: 19ms)
- GET /api/listings?section=public 200 in 73ms (next.js: 13ms, application-code: 60ms)
-✓ Compiled in 18ms
-✓ Compiled in 26ms
-✓ Compiled in 19ms
- GET /?screen=catalog&section=public 200 in 114ms (next.js: 7ms, application-code: 107ms)
- GET /api/listings?section=public 200 in 79ms (next.js: 22ms, application-code: 57ms)
-✓ Compiled in 19ms
- GET /?screen=catalog&section=public 200 in 102ms (next.js: 3ms, application-code: 99ms)
- GET /api/listings?section=public 200 in 38ms (next.js: 20ms, application-code: 18ms)
- GET /?screen=catalog&section=public 200 in 100ms (next.js: 5ms, application-code: 96ms)
- GET /api/listings?section=public 200 in 113ms (next.js: 20ms, application-code: 93ms)
- GET /?screen=catalog&section=public 200 in 106ms (next.js: 3ms, application-code: 103ms)
- GET /api/listings?section=public 200 in 40ms (next.js: 21ms, application-code: 20ms)
- GET /?screen=catalog&section=public 200 in 121ms (next.js: 4ms, application-code: 117ms)
- GET /api/listings?section=public 200 in 33ms (next.js: 17ms, application-code: 16ms)
- GET /api/listings?section=ngo 200 in 39ms (next.js: 16ms, application-code: 23ms)
-✓ Compiled in 94ms
-✓ Compiled in 15ms
-✓ Compiled in 15ms
-✓ Compiled in 59ms
- GET /?screen=catalog&section=public 200 in 113ms (next.js: 5ms, application-code: 107ms)
- GET /api/listings?section=public 200 in 86ms (next.js: 22ms, application-code: 64ms)
- GET / 200 in 100ms (next.js: 4ms, application-code: 96ms)
- GET /api/listings? 200 in 74ms (next.js: 19ms, application-code: 55ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 31ms (next.js: 2ms, application-code: 29ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 61ms (next.js: 3ms, application-code: 58ms)
- GET /api/listings?section=public 200 in 28ms (next.js: 15ms, application-code: 13ms)
- GET /api/listings?section=public 200 in 189ms (next.js: 17ms, application-code: 172ms)
- GET /api/listings 200 in 82ms (next.js: 19ms, application-code: 63ms)
- GET /api/plans 200 in 91ms (next.js: 20ms, application-code: 71ms)
-✓ Compiled in 89ms
-✓ Compiled in 83ms
-✓ Compiled in 104ms
-✓ Compiled in 36ms
- GET /api/listings?section=public 200 in 82ms (next.js: 16ms, application-code: 66ms)
- GET /api/listings?section=public 200 in 69ms (next.js: 4ms, application-code: 64ms)
- GET /api/plans 200 in 34ms (next.js: 15ms, application-code: 19ms)
-✓ Compiled in 21ms
- GET /api/listings 200 in 79ms (next.js: 18ms, application-code: 61ms)
- GET /api/listings/1f7fb163-a2e4-48f9-baac-2ffd42036184 200 in 30ms (next.js: 3ms, application-code: 27ms)
- GET /?bid=1f7fb163-a2e4-48f9-baac-2ffd42036184 200 in 120ms (next.js: 3ms, application-code: 117ms)
- GET /api/listings/1f7fb163-a2e4-48f9-baac-2ffd42036184 200 in 78ms (next.js: 18ms, application-code: 60ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 20ms (next.js: 3ms, application-code: 17ms)
- GET /api/listings? 200 in 18ms (next.js: 2ms, application-code: 16ms)
- GET /api/plans 200 in 182ms (next.js: 18ms, application-code: 165ms)
- GET /api/listings?section=ngo 200 in 119ms (next.js: 22ms, application-code: 98ms)
- GET /api/listings?section=private 200 in 29ms (next.js: 12ms, application-code: 16ms)
- GET /api/listings/cf5bc9f0-402c-4e96-8cc8-0a778dba6f2f 200 in 33ms (next.js: 17ms, application-code: 16ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 66ms (next.js: 32ms, application-code: 34ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 67ms (next.js: 3ms, application-code: 64ms)
- GET /api/listings? 200 in 22ms (next.js: 3ms, application-code: 19ms)
- GET /api/listings?section=vehicle 200 in 79ms (next.js: 20ms, application-code: 59ms)
- GET /api/listings? 200 in 21ms (next.js: 4ms, application-code: 16ms)
- GET /api/listings?section=vehicle 200 in 33ms (next.js: 17ms, application-code: 16ms)
- GET /api/listings? 200 in 56ms (next.js: 11ms, application-code: 45ms)
- GET /api/listings/8d0813e3-d226-43e4-bcd4-ec2b3d276a84 200 in 33ms (next.js: 16ms, application-code: 17ms)
- GET /api/photos/76332b74-0772-4f1e-9ba5-bfbb3bb9ee12 200 in 16ms (next.js: 3ms, application-code: 13ms)
- GET /api/photos/76332b74-0772-4f1e-9ba5-bfbb3bb9ee12 200 in 18ms (next.js: 2ms, application-code: 15ms)
- GET /api/listings?section=ngo 200 in 38ms (next.js: 20ms, application-code: 18ms)
- GET /api/listings/02008b1e-4cbb-48c6-98d9-0f1f20e7b606 200 in 31ms (next.js: 18ms, application-code: 13ms)
- GET /api/listings? 200 in 94ms (next.js: 18ms, application-code: 75ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 20ms (next.js: 4ms, application-code: 16ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 14ms (next.js: 2ms, application-code: 12ms)
- GET /api/listings?section=ngo 200 in 34ms (next.js: 18ms, application-code: 16ms)
- GET /api/listings/02008b1e-4cbb-48c6-98d9-0f1f20e7b606 200 in 32ms (next.js: 16ms, application-code: 16ms)
- GET /api/listings? 200 in 40ms (next.js: 22ms, application-code: 18ms)
- GET /api/listings/02008b1e-4cbb-48c6-98d9-0f1f20e7b606 200 in 35ms (next.js: 18ms, application-code: 17ms)
-✓ Compiled in 43ms
- GET /api/listings/02008b1e-4cbb-48c6-98d9-0f1f20e7b606 200 in 88ms (next.js: 17ms, application-code: 70ms)
- GET /api/plans 200 in 65ms (next.js: 3ms, application-code: 62ms)
- GET /api/listings? 200 in 33ms (next.js: 2ms, application-code: 30ms)
- GET /api/listings? 200 in 20ms (next.js: 3ms, application-code: 18ms)
-✓ Compiled in 48ms
-✓ Compiled in 47ms
-✓ Compiled in 33ms
-✓ Compiled in 132ms
-✓ Compiled in 75ms
-✓ Compiled in 176ms
-✓ Compiled in 76ms
-✓ Compiled in 93ms
-✓ Compiled in 64ms
-✓ Compiled in 64ms
-✓ Compiled in 84ms
-✓ Compiled in 133ms
-✓ Compiled in 88ms
-✓ Compiled in 51ms
- GET /api/listings/02008b1e-4cbb-48c6-98d9-0f1f20e7b606 200 in 93ms (next.js: 21ms, application-code: 72ms)
- GET /api/plans 200 in 70ms (next.js: 3ms, application-code: 66ms)
- GET /api/listings? 200 in 56ms (next.js: 22ms, application-code: 34ms)
- GET /api/listings? 200 in 21ms (next.js: 3ms, application-code: 18ms)
-✓ Compiled in 33ms
-✓ Compiled in 86ms
-✓ Compiled in 21ms
-✓ Compiled in 14ms
-✓ Compiled in 86ms
-✓ Compiled in 89ms
-✓ Compiled in 16ms
-✓ Compiled in 99ms
- GET /api/listings/02008b1e-4cbb-48c6-98d9-0f1f20e7b606 200 in 95ms (next.js: 22ms, application-code: 73ms)
- GET /api/plans 200 in 64ms (next.js: 5ms, application-code: 59ms)
- GET /api/listings? 200 in 41ms (next.js: 13ms, application-code: 28ms)
- GET /api/listings? 200 in 21ms (next.js: 3ms, application-code: 18ms)
-✓ Compiled in 42ms
- GET /api/listings/02008b1e-4cbb-48c6-98d9-0f1f20e7b606 200 in 18ms (next.js: 2ms, application-code: 15ms)
- GET /api/plans 200 in 84ms (next.js: 16ms, application-code: 68ms)
- GET /api/listings? 200 in 48ms (next.js: 17ms, application-code: 32ms)
- GET /api/listings? 200 in 21ms (next.js: 3ms, application-code: 18ms)
- GET /api/listings 200 in 73ms (next.js: 17ms, application-code: 57ms)
- GET /api/plans 200 in 21ms (next.js: 2ms, application-code: 18ms)
- GET /api/plans 200 in 17ms (next.js: 3ms, application-code: 14ms)
-✓ Compiled in 94ms
- GET /supplier 404 in 474ms (next.js: 358ms, application-code: 116ms)
- GET /?screen=auth 200 in 114ms (next.js: 5ms, application-code: 109ms)
- GET /api/listings? 200 in 192ms (next.js: 15ms, application-code: 177ms)
- GET /api/plans 200 in 69ms (next.js: 17ms, application-code: 52ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 79ms (next.js: 18ms, application-code: 61ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 57ms (next.js: 1.5ms, application-code: 55ms)
- GET /api/listings?section=vehicle 200 in 34ms (next.js: 8ms, application-code: 26ms)
- GET /api/listings/1f7fb163-a2e4-48f9-baac-2ffd42036184 200 in 25ms (next.js: 13ms, application-code: 11ms)
- GET /api/listings/1f7fb163-a2e4-48f9-baac-2ffd42036184 200 in 71ms (next.js: 17ms, application-code: 54ms)
- GET /?bid=02008b1e-4cbb-48c6-98d9-0f1f20e7b606 200 in 104ms (next.js: 3ms, application-code: 101ms)
- GET /api/listings/02008b1e-4cbb-48c6-98d9-0f1f20e7b606 200 in 76ms (next.js: 26ms, application-code: 50ms)
- GET /api/listings? 200 in 16ms (next.js: 2ms, application-code: 14ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 44ms (next.js: 13ms, application-code: 31ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 57ms (next.js: 1.3ms, application-code: 56ms)
- GET /api/listings/1f7fb163-a2e4-48f9-baac-2ffd42036184 200 in 29ms (next.js: 15ms, application-code: 14ms)
-✓ Compiled in 39ms
-✓ Compiled in 17ms
- GET /api/listings? 200 in 154ms (next.js: 13ms, application-code: 142ms)
-✓ Compiled in 19ms
- GET /api/listings? 200 in 18ms (next.js: 7ms, application-code: 11ms)
-✓ Compiled in 9ms
-✓ Compiled in 16ms
-✓ Compiled in 8ms
-✓ Compiled in 37ms
-✓ Compiled in 10ms
- GET / 200 in 51ms (next.js: 1.4ms, application-code: 50ms)
+ GET / 200 in 410ms (next.js: 194ms, application-code: 215ms)
+ GET / 200 in 44ms (next.js: 3ms, application-code: 41ms)
 [browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
 
 - A server/client branch `if (typeof window !== 'undefined')`.
@@ -513,7 +39,7 @@ https://react.dev/link/hydration-mismatch
                               <header
                                 className="desk-nav desk-only"
                                 aria-label="Site navigation"
--                               data-cursor-ref="e23"
+-                               data-cursor-ref="e22"
                               >
                                 <div className="desk-nav-i...">
                                   <button
@@ -588,42 +114,45 @@ https://react.dev/link/hydration-mismatch
                             <div className="supplier-s...">
                               <HomeScreen q="" setQ={function setQ} items={[...]} onSection={function onSection} ...>
                                 <section className="catalog is...">
-                                  <div className="app-home-b...">
-                                    <div className="page-head">
-                                      <h1
--                                       data-cursor-ref="e24"
-                                      >
-+                                       Bid Ethiopia
+                                  <div className="phone-top ...">
+                                    <div className="app-home-bar">
+                                      <div className="page-head">
+                                        <p
+                                          className="phone-brand"
+-                                         data-cursor-ref="e23"
+                                        >
++                                         Bid Ethiopia
+                                        ...
                                       ...
                                     ...
-                                  <div>
                                   <div className="desk-home-...">
                                     <div>
                                       <p
                                         className="eyebrow"
--                                       data-cursor-ref="e25"
+-                                       data-cursor-ref="e24"
                                       >
 +                                       Procurement directory · Ethiopia
                                       <h1
                                         className="serif desk-home-title"
--                                       data-cursor-ref="e26"
+-                                       data-cursor-ref="e25"
                                       >
 +                                       Bid Ethiopia
                                       <p
                                         className="desk-home-tagline"
--                                       data-cursor-ref="e27"
+-                                       data-cursor-ref="e26"
                                       >
 +                                       Find a bid. Judge the lot. Bid with the issuer.
                                     <p
                                       className="desk-home-lead"
--                                     data-cursor-ref="e28"
+-                                     data-cursor-ref="e27"
                                     >
 +                                     Search public, NGO, private, and vehicle opportunities. Closing times are in EAT....
-                                  <h2
-                                    className="section-label"
--                                   data-cursor-ref="e29"
-                                  >
-+                                   Categories
+                                  <div className="section-head">
+                                    <h2
+                                      className="section-label"
+-                                     data-cursor-ref="e28"
+                                    >
++                                     Categories
                                   <div className="section-tiles">
                                     <button
                                       type="button"
@@ -661,18 +190,18 @@ https://react.dev/link/hydration-mismatch
 -                                     data-cursor-ref="e13"
                                     >
                                     <p
--                                     data-cursor-ref="e30"
+-                                     data-cursor-ref="e29"
                                     >
 +                                     Find a tender or vehicle lot, judge the notice, then bid with the issuer. Closing...
                                   <div className="site-foote...">
                                     <div>
                                       <h2
--                                       data-cursor-ref="e31"
+-                                       data-cursor-ref="e30"
                                       >
 +                                       Browse
                                       <ul>
                                         <li
--                                         data-cursor-ref="e32"
+-                                         data-cursor-ref="e31"
                                         >
                                           <button
                                             type="button"
@@ -681,7 +210,7 @@ https://react.dev/link/hydration-mismatch
                                           >
 +                                           Public Tenders
                                         <li
--                                         data-cursor-ref="e33"
+-                                         data-cursor-ref="e32"
                                         >
                                           <button
                                             type="button"
@@ -690,7 +219,7 @@ https://react.dev/link/hydration-mismatch
                                           >
 +                                           NGO Tenders
                                         <li
--                                         data-cursor-ref="e34"
+-                                         data-cursor-ref="e33"
                                         >
                                           <button
                                             type="button"
@@ -699,7 +228,7 @@ https://react.dev/link/hydration-mismatch
                                           >
 +                                           Private Tenders
                                         <li
--                                         data-cursor-ref="e35"
+-                                         data-cursor-ref="e34"
                                         >
                                           <button
                                             type="button"
@@ -709,12 +238,12 @@ https://react.dev/link/hydration-mismatch
 +                                           Vehicle Bids
                                     <div>
                                       <h2
--                                       data-cursor-ref="e36"
+-                                       data-cursor-ref="e35"
                                       >
 +                                       Account
                                       <ul>
                                         <li
--                                         data-cursor-ref="e37"
+-                                         data-cursor-ref="e36"
                                         >
                                           <button
                                             type="button"
@@ -723,7 +252,7 @@ https://react.dev/link/hydration-mismatch
                                           >
 +                                           Sign in
                                         <li
--                                         data-cursor-ref="e38"
+-                                         data-cursor-ref="e37"
                                         >
                                           <button
                                             type="button"
@@ -732,7 +261,7 @@ https://react.dev/link/hydration-mismatch
                                           >
 +                                           Subscriptions
                                         <li
--                                         data-cursor-ref="e39"
+-                                         data-cursor-ref="e38"
                                         >
                                           <button
                                             type="button"
@@ -741,7 +270,7 @@ https://react.dev/link/hydration-mismatch
                                           >
 +                                           Saved lots
                                         <li
--                                         data-cursor-ref="e40"
+-                                         data-cursor-ref="e39"
                                         >
                                           <button
                                             type="button"
@@ -751,32 +280,33 @@ https://react.dev/link/hydration-mismatch
 +                                           Alerts
                                     <div>
                                       <h2
--                                       data-cursor-ref="e41"
+-                                       data-cursor-ref="e40"
                                       >
 +                                       Directory
                                       <ul className="site-foote...">
                                         <li
--                                         data-cursor-ref="e42"
+-                                         data-cursor-ref="e41"
                                         >
 +                                         Timezone · EAT (UTC+3)
                                         <li
--                                         data-cursor-ref="e43"
+-                                         data-cursor-ref="e42"
                                         >
 +                                         Listings labeled DEMO
                                         <li
--                                         data-cursor-ref="e44"
+-                                         data-cursor-ref="e43"
                                         >
 +                                         Purchase on the website
                                         <li
--                                         data-cursor-ref="e45"
+-                                         data-cursor-ref="e44"
                                         >
 +                                         Android uses the same account
                                 <div className="site-foote...">
                                   <p
--                                   data-cursor-ref="e46"
+-                                   data-cursor-ref="e45"
                                   >
++                                   © 2026 Bid Ethiopia · Informational procurement directory prototype
                                   <p
--                                   data-cursor-ref="e47"
+-                                   data-cursor-ref="e46"
                                   >
 +                                   Not affiliated with any issuer. Bidding happens with the issuer, not on this site.
                             ...
@@ -784,28 +314,73 @@ https://react.dev/link/hydration-mismatch
                   ...
       ...
  
- GET /api/listings? 200 in 54ms (next.js: 9ms, application-code: 46ms)
- GET /api/photos/9ad7f54b-8027-409e-953f-e017b3a7b7f7 200 in 22ms (next.js: 1.1ms, application-code: 20ms)
- GET /api/photos/993f9ef0-a134-44fc-97a1-c08db07ec9d3 200 in 52ms (next.js: 1.1ms, application-code: 51ms)
- GET /api/listings 200 in 40ms (next.js: 6ms, application-code: 34ms)
-✓ Compiled in 20ms
-✓ Compiled in 37ms
+API error ECONNREFUSED
+ GET /api/listings? 503 in 1256ms (next.js: 1193ms, application-code: 63ms)
+API error ECONNREFUSED
+ GET /api/listings 503 in 17ms (next.js: 7ms, application-code: 10ms)
+API error ECONNREFUSED
+ GET /api/listings 503 in 17ms (next.js: 8ms, application-code: 9ms)
+API error ECONNREFUSED
+ GET /api/listings 503 in 18ms (next.js: 8ms, application-code: 10ms)
+ GET / 200 in 67ms (next.js: 1.6ms, application-code: 66ms)
+API error ECONNREFUSED
+ GET /api/listings? 503 in 25ms (next.js: 15ms, application-code: 11ms)
+ GET / 200 in 55ms (next.js: 4ms, application-code: 51ms)
+API error ECONNREFUSED
+ GET /api/listings? 503 in 31ms (next.js: 18ms, application-code: 13ms)
+API error ECONNREFUSED
+ GET /api/listings?section=vehicle 503 in 23ms (next.js: 10ms, application-code: 13ms)
+API error ECONNREFUSED
+ GET /api/listings? 503 in 26ms (next.js: 14ms, application-code: 12ms)
+API error ECONNREFUSED
+ GET /api/listings?section=vehicle 503 in 27ms (next.js: 14ms, application-code: 13ms)
+API error ECONNREFUSED
+ GET /api/listings? 503 in 28ms (next.js: 15ms, application-code: 12ms)
+API error ECONNREFUSED
+ GET /api/listings?section=vehicle 503 in 21ms (next.js: 12ms, application-code: 9ms)
+API error ECONNREFUSED
+ GET /api/listings? 503 in 26ms (next.js: 14ms, application-code: 13ms)
+✓ Compiled in 79ms
+✓ Compiled in 46ms
+✓ Compiled in 23ms
+✓ Compiled in 31ms
+✓ Compiled in 21ms
+API error ECONNREFUSED
+ GET /api/listings? 503 in 44ms (next.js: 17ms, application-code: 27ms)
+API error ECONNREFUSED
+ GET /api/listings? 503 in 16ms (next.js: 1.4ms, application-code: 14ms)
+✓ Compiled in 51ms
+✓ Compiled in 39ms
+✓ Compiled in 16ms
 ✓ Compiled in 9ms
- GET /?screen=catalog&section=vehicle 200 in 113ms (next.js: 2ms, application-code: 111ms)
- GET /api/listings?section=vehicle 200 in 81ms (next.js: 17ms, application-code: 64ms)
- GET /api/photos/f9306c62-eb44-4d09-bf58-a2232fe62d97 200 in 64ms (next.js: 4ms, application-code: 60ms)
- GET /api/photos/f646e242-547e-4a53-997a-c02b57ac234c 200 in 116ms (next.js: 3ms, application-code: 113ms)
- GET /?screen=catalog&section=vehicle 200 in 125ms (next.js: 1.7ms, application-code: 123ms)
- GET /api/listings?section=vehicle 200 in 85ms (next.js: 19ms, application-code: 66ms)
- GET /api/photos/f9306c62-eb44-4d09-bf58-a2232fe62d97 200 in 50ms (next.js: 3ms, application-code: 47ms)
- GET /api/photos/f646e242-547e-4a53-997a-c02b57ac234c 200 in 68ms (next.js: 3ms, application-code: 65ms)
- GET /?bid=1f7fb163-a2e4-48f9-baac-2ffd42036184&section=vehicle 200 in 115ms (next.js: 1.4ms, application-code: 114ms)
- GET /api/listings/1f7fb163-a2e4-48f9-baac-2ffd42036184 200 in 94ms (next.js: 15ms, application-code: 79ms)
- GET /api/listings? 200 in 19ms (next.js: 2ms, application-code: 17ms)
- GET /api/photos/f646e242-547e-4a53-997a-c02b57ac234c 200 in 20ms (next.js: 1.4ms, application-code: 19ms)
- GET /api/listings?section=vehicle 200 in 14ms (next.js: 1.5ms, application-code: 13ms)
- GET /api/photos/f9306c62-eb44-4d09-bf58-a2232fe62d97 200 in 31ms (next.js: 1.1ms, application-code: 30ms)
- GET /?screen=catalog&section=vehicle 200 in 116ms (next.js: 1.6ms, application-code: 115ms)
- GET /api/listings?section=vehicle 200 in 74ms (next.js: 14ms, application-code: 60ms)
- GET /api/photos/f646e242-547e-4a53-997a-c02b57ac234c 200 in 64ms (next.js: 1.3ms, application-code: 63ms)
- GET /api/photos/f9306c62-eb44-4d09-bf58-a2232fe62d97 200 in 85ms (next.js: 3ms, application-code: 82ms)
+API error ECONNREFUSED
+ GET /api/listings? 503 in 26ms (next.js: 8ms, application-code: 17ms)
+API error ECONNREFUSED
+ GET /api/listings? 503 in 13ms (next.js: 1.0ms, application-code: 12ms)
+✓ Compiled in 8ms
+✓ Compiled in 11ms
+✓ Compiled in 11ms
+✓ Compiled in 13ms
+✓ Compiled in 10ms
+  Reload env: .env.local
+ GET / 200 in 226ms (next.js: 115ms, application-code: 111ms)
+ GET / 200 in 29ms (next.js: 2ms, application-code: 26ms)
+ GET /api/listings 200 in 174ms (next.js: 35ms, application-code: 139ms)
+ GET / 200 in 230ms (next.js: 1.1ms, application-code: 229ms)
+ GET /api/listings? 200 in 28ms (next.js: 18ms, application-code: 11ms)
+ GET /api/photos/f9306c62-eb44-4d09-bf58-a2232fe62d97 200 in 51ms (next.js: 1.5ms, application-code: 50ms)
+ GET /api/photos/f646e242-547e-4a53-997a-c02b57ac234c 200 in 93ms (next.js: 1.5ms, application-code: 91ms)
+ GET /api/listings?section=private 200 in 57ms (next.js: 13ms, application-code: 45ms)
+ GET /api/photos/f9306c62-eb44-4d09-bf58-a2232fe62d97 200 in 35ms (next.js: 8ms, application-code: 26ms)
+ GET /api/photos/f646e242-547e-4a53-997a-c02b57ac234c 200 in 67ms (next.js: 1.1ms, application-code: 66ms)
+ GET /api/listings?section=vehicle 200 in 8ms (next.js: 1.1ms, application-code: 7ms)
+ GET /api/listings?section=private 200 in 23ms (next.js: 14ms, application-code: 9ms)
+ GET /api/listings?section=ngo 200 in 25ms (next.js: 15ms, application-code: 10ms)
+ GET /api/listings?section=public 200 in 22ms (next.js: 15ms, application-code: 8ms)
+ GET /api/listings?section=ngo 200 in 23ms (next.js: 16ms, application-code: 8ms)
+ GET /api/listings?section=private 200 in 27ms (next.js: 15ms, application-code: 12ms)
+ GET /api/listings?section=vehicle 200 in 27ms (next.js: 15ms, application-code: 12ms)
+ GET /api/listings?section=vehicle&condition=used 200 in 27ms (next.js: 13ms, application-code: 13ms)
+ GET /api/listings?section=vehicle&condition=damaged 200 in 25ms (next.js: 16ms, application-code: 10ms)
+ GET /api/listings?section=vehicle&condition=salvage 200 in 21ms (next.js: 13ms, application-code: 9ms)
+ GET /api/listings?section=vehicle 200 in 26ms (next.js: 13ms, application-code: 12ms)

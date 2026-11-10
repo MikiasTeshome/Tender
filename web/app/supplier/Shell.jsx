@@ -420,6 +420,8 @@ export default function Shell({authUrl = '', authKey = ''}) {
           q={filters.q}
           setQ={setQ}
           items={homeItems}
+          busy={busy}
+          error={loadError}
           onSection={(key) => go('catalog', key)}
           onOpen={open}
           onProfile={() => go('profile')}
@@ -433,7 +435,6 @@ export default function Shell({authUrl = '', authKey = ''}) {
       onHome={() => go('home')}
       onSection={(key) => go('catalog', key)}
       onSaved={() => go('saved')}
-      onAlerts={() => go('alerts')}
       onPlans={() => go('plans')}
       onProfile={() => go('profile')}
       onSignIn={() => go('auth')}
