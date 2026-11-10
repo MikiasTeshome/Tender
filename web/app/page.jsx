@@ -1,7 +1,7 @@
-import Portal from './portal.jsx';
+import Shell from './supplier/Shell.jsx';
 
 export const dynamic = 'force-dynamic';
 
 export default function Page() {
-  return <Portal authUrl={process.env.SUPABASE_URL ?? ''} authKey={process.env.SUPABASE_ANON_KEY ?? ''} />;
+  return <Shell authUrl={process.env.SUPABASE_URL ?? ''} authKey={process.env.SUPABASE_ANON_KEY ?? ''} />;
 }

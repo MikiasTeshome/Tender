@@ -20,26 +20,23 @@ const auth = supabaseUrl && supabaseKey ? createClient(supabaseUrl,supabaseKey,{
   },
 }).auth : null;
 
-const sections = [['public','Public tenders'],['ngo','NGO tenders'],['private','Private tenders'],['vehicle','Vehicle bids']];
+const sections = [['public','Public tenders','Government procurement'],['ngo','NGO tenders','Development and humanitarian work'],['private','Private tenders','Company procurement'],['vehicle','Vehicle bids','Fleet, damaged and salvage vehicles']];
 const defaults = {section:'',q:'',region:'',access:'',deadline:'',condition:'',make:'',model:''};
 const format = new Intl.DateTimeFormat('en-ET',{timeZone:'Africa/Addis_Ababa',dateStyle:'medium',timeStyle:'short'});
 const date = (value) => format.format(new Date(value)) + ' EAT';
+function closesIn(value,status) {
+  if (status !== 'active') return status;
+  const days = Math.ceil((new Date(value) - Date.now()) / 86400000);
+  if (days <= 1) return 'Closes today';
+  if (days === 2) return 'Closes tomorrow';
+  return 'Closes in ' + days + ' days';
+}
 const photo = (id) => base + '/api/photos/' + id;
 
 function Button({label,onPress,active=false}) {
   return <Pressable accessibilityRole="button" style={[styles.button,active && styles.active]} onPress={onPress}>
     <Text style={[styles.buttonText,active && styles.activeText]}>{label}</Text>
   </Pressable>;
-}
-
-function DetailDisclosure({label,content,active,children}) {
-  const [expanded,setExpanded] = useState(false);
-  return <View style={styles.gap}>
-    <Pressable accessibilityRole="button" accessibilityState={{expanded}} style={[styles.button,active && styles.active]} onPress={() => setExpanded(!expanded)}>
-      <Text style={[styles.buttonText,active && styles.activeText]}>{label} {expanded ? '−' : '+'}</Text>
-    </Pressable>
-    {expanded && <>{!!content && <Text style={styles.body}>{content}</Text>}{children}</>}
-  </View>;
 }
 
 function Cards({items,open}) {
@@ -49,7 +46,7 @@ function Cards({items,open}) {
       <Text style={styles.kicker}>{item.condition ?? item.sector} · {item.access === 'paid' ? 'Subscriber' : 'Free'}</Text>
       <Text style={styles.cardTitle}>{item.title}</Text>
       {!item.vehicle && item.issuer && <Text style={styles.body}>{item.issuer}</Text>}
-      <Text style={styles.body}>{item.status === 'active' ? 'Closes' : item.status} · {date(item.deadline)}</Text>
+      <Text style={styles.body}>{closesIn(item.deadline,item.status)} · {date(item.deadline)}</Text>
     </View>
   </Pressable>);
 }
@@ -203,38 +200,40 @@ export default function App() {
       {view === 'detail' && item && <View style={styles.gap}>
         {item.vehicle && !!item.cover && <Image source={{uri:photo(item.cover)}} style={styles.cover} accessibilityLabel={item.title} />}
         <Text style={styles.kicker}>{item.vehicle ? 'Vehicle bid' : item.sector} · {item.access === 'paid' ? 'Subscriber' : 'Free'}</Text>
-        <Text style={styles.heading}>{item.title}</Text><Text style={styles.body}>{item.status === 'active' ? 'Closes' : item.status} · {date(item.deadline)}</Text>
-        {item.condition && <Text style={styles.kicker}>{item.condition}</Text>}
-        {item.locked ? <Text style={styles.notice}>An active subscription is required to see the issuer and bidding instructions.</Text> :
+        <Text style={styles.heading}>{item.title}</Text><Text style={styles.body}>{closesIn(item.deadline,item.status)} · {date(item.deadline)}</Text>
+        {!!item.condition && <Text style={styles.kicker}>{item.condition}</Text>}
+        {item.locked ? <Text style={styles.notice}>The photo and condition are visible. A subscription unlocks the issuer, the other photos, and the bidding instructions.</Text> :
           <>
+            <View style={styles.notice}>
+              <Text style={styles.cardTitle}>Bid with the issuer</Text>
+              {!!item.details.instructions && <Text style={styles.body}>{item.details.instructions}</Text>}
+              {!!item.details.sourceUrl && <Button label="Open the issuer's notice ↗" active onPress={() => run(() => Linking.openURL(item.details.sourceUrl))} />}
+            </View>
             {Object.entries({Issuer:item.issuer,Region:item.region,Location:item.details.location,Reference:item.details.reference,Lot:item.details.lot,
-              Make:item.details.make,Model:item.details.model,Year:item.details.year,Mileage:item.details.mileage,'Notice details':item.details.description}).filter(([,value]) => value).map(([key,value]) => <View key={key}><Text style={styles.kicker}>{key}</Text><Text style={styles.body}>{value}</Text></View>)}
-            {item.vehicle && item.photos.some((id) => id !== item.cover) && <DetailDisclosure key={item.id + '-photos'} label="More photos">
-              {item.photos.filter((id) => id !== item.cover).map((id) => <Image key={id} source={{uri:photo(id),headers:token ? {Authorization:'Bearer ' + token} : {}}} style={styles.cover} />)}
-            </DetailDisclosure>}
-            {item.details.inspection && <DetailDisclosure key={item.id + '-inspection'} label="Inspection notes" content={item.details.inspection} />}
-            {item.details.instructions ? <DetailDisclosure key={item.id + '-instructions'} label="View bidding instructions" content={item.details.instructions} active>
-              {!!item.details.sourceUrl && <Button label="Open original notice ↗" onPress={() => run(() => Linking.openURL(item.details.sourceUrl))} />}
-            </DetailDisclosure> : !!item.details.sourceUrl && <Button label="View bidding instructions ↗" active onPress={() => run(() => Linking.openURL(item.details.sourceUrl))} />}
+              Make:item.details.make,Model:item.details.model,Year:item.details.year,Mileage:item.details.mileage}).filter(([,value]) => value).map(([key,value]) => <View key={key}><Text style={styles.kicker}>{key}</Text><Text style={styles.body}>{value}</Text></View>)}
+            {item.vehicle && item.photos.some((id) => id !== item.cover) && item.photos.filter((id) => id !== item.cover).map((id) => <Image key={id} source={{uri:photo(id),headers:token ? {Authorization:'Bearer ' + token} : {}}} style={styles.cover} accessibilityLabel="Another photo of this lot" />)}
+            {!!item.details.inspection && <View><Text style={styles.kicker}>Condition notes</Text><Text style={styles.body}>{item.details.inspection}</Text></View>}
+            {!!item.details.description && <View><Text style={styles.kicker}>Notice details</Text><Text style={styles.body}>{item.details.description}</Text></View>}
           </>}
         <Button label={showSaved ? 'Remove from saved' : 'Save opportunity'} onPress={() => account ? run(async () => {
           await api('saved/' + item.id,{method:showSaved ? 'DELETE' : 'PUT'});await refresh();
         }) : go('signIn')} />
       </View>}
       {view === 'browse' && <>
-        <Text style={styles.heading}>Find a bid</Text>
+        <Text style={styles.heading}>Active bids</Text>
+        <Text style={styles.body}>Find a notice, check a vehicle, then submit the bid with the issuer.</Text>
         <TextInput accessibilityLabel="Search tenders and vehicles" placeholder="Search tenders and vehicles" style={styles.input} value={filters.q} onChangeText={(value) => set('q',value)} />
         <View style={styles.categoryGrid}>
-          {sections.map(([section,label],index) => <Pressable key={section} accessibilityRole="button" accessibilityState={{selected:filters.section === section}}
+          {sections.map(([section,label,hint]) => <Pressable key={section} accessibilityRole="button" accessibilityState={{selected:filters.section === section}}
             style={[styles.category,filters.section === section && styles.active]} onPress={() => {setStatus('');setShowFilters(false);setFilters({...defaults,section:filters.section === section ? '' : section});}}>
-            <Text style={[styles.categoryIcon,filters.section === section && styles.activeText]}>{['▤','◎','◇','↗'][index]}</Text>
             <Text style={[styles.buttonText,filters.section === section && styles.activeText]}>{label}</Text>
+            <Text style={[styles.body,filters.section === section && styles.activeText]}>{hint}</Text>
           </Pressable>)}
         </View>
-        {home && <><Text style={styles.heading}>Vehicle bids</Text><Cards items={vehicles} open={open} />
+        {home && <><Text style={styles.heading}>Vehicle bids</Text><Text style={styles.body}>Use the photo, condition, and closing time to choose a lot.</Text><Cards items={vehicles} open={open} />
           {process.env.EXPO_PUBLIC_VEHICLE_REFERENCE_PREVIEW === 'true' && <Button label="Open vehicle design preview" onPress={() => go('vehiclePreview')} />}
           {!vehicles.length && <Text style={styles.body}>Available company vehicles will appear here.</Text>}</>}
-        <Text style={styles.heading}>{sections.find(([id]) => id === filters.section)?.[1] ?? 'Active opportunities'}</Text>
+        <Text style={styles.heading}>{sections.find(([id]) => id === filters.section)?.[1] ?? 'Open tenders'}</Text>
         <Button label={showFilters ? 'Hide filters' : 'Filters'} onPress={() => setShowFilters(!showFilters)} />
         {showFilters && <>
         {[['region','Filter by region'],...(filters.section === 'vehicle' ? [['make','Filter by make'],['model','Filter by model']] : [])].map(([key,label]) =>
@@ -248,8 +247,8 @@ export default function App() {
           <Button label="Save search" onPress={() => run(async () => {
             await api('searches',{method:'POST',data:{label:searchName,filters}});setSearchName('');await refresh();setStatus('Search saved.');
           })} /></View>}
-        {loading ? <Text style={styles.body}>Loading opportunities…</Text> : <Cards items={list.items} open={open} />}
-        {!loading && !status && !list.items.length && <Text style={styles.body}>No active opportunities match these filters.</Text>}
+        {loading ? <Text style={styles.body}>Loading opportunities…</Text> : <Cards items={(home ? list.items.filter((entry) => !entry.vehicle) : list.items)} open={open} />}
+        {!loading && !status && !(home ? list.items.some((entry) => !entry.vehicle) : list.items.length) && <Text style={styles.body}>No active opportunities match these filters.</Text>}
         {list.next && !loading && <Button label="Load more" onPress={() => run(async () => {
           const query = new URLSearchParams(Object.entries({...filters,page:list.next}).filter(([,v]) => v));
           const result = await api('listings?' + query);
