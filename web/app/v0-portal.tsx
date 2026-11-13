@@ -63,6 +63,7 @@ type VehicleLot = {
   title: string
   condition: 'Used' | 'Damaged'
   conditionLabel: string
+  regionLabel?: string
   region: string
   yardLocation: string
   issuer: string
@@ -137,6 +138,54 @@ type AlertNotification = {
 
 // 1. VEHICLE LOTS FIXTURES (with Keys, Starter, Mileage)
 const VEHICLE_LOTS: VehicleLot[] = [
+  {
+    "id": "ሙከራ-ተ-፩",
+    "title": "የአገልግሎት ላይ የዋለ ቶዮታ ኮሮላ ሽያጭ",
+    "condition": "Used",
+    "conditionLabel": "ያገለገለ",
+    "region": "Addis Ababa",
+    "regionLabel": "አዲስ አበባ",
+    "yardLocation": "አቃቂ፣ አዲስ አበባ",
+    "issuer": "የተሽከርካሪ አስተዳደር ክፍል (ምናባዊ ተቋም)",
+    "issuerCategory": "የተቋም ተሽከርካሪ ሽያጭ",
+    "closeIso": "2026-12-29T10:00:00+03:00",
+    "closeLabel": "ዲሴምበር 29፣ 2026 · 10:00 የምሥራቅ አፍሪካ ሰዓት",
+    "cpoBond": "50,000 ብር",
+    "estimatedReserve": "1,450,000 ብር",
+    "year": 2017,
+    "mileage": "112,450 ኪሎ ሜትር",
+    "keys": "ሁለት ቁልፎች አሉ",
+    "starter": "ሞተሩ በቀላሉ ይነሳል",
+    "fuelType": "ቤንዚን",
+    "transmission": "ባለ አምስት ፍጥነት ማርሽ",
+    "plateStatus": "የተቋም ታርጋ ያለው",
+    "summary": "ይህ የሙከራ ጨረታ ነው። ተሽከርካሪው ከዚህ በፊት ለቢሮ አገልግሎት ውሏል። ተጫራቾች ዋጋ ከማቅረባቸው በፊት መኪናውን በቦታው ማየት ይችላሉ።",
+    "inspectionReport": {
+      "engine": "ሞተሩ ተፈትሾ በአግባቡ ይሠራል።",
+      "gearbox": "ማርሹ በቀላሉ ይቀየራል።",
+      "bodyFrame": "በፊት መከላከያው ላይ ትንሽ ጭረት አለ።",
+      "interior": "መቀመጫዎቹ ጥቂት የአጠቃቀም ምልክቶች አሏቸው።",
+      "tyres": "ተጨማሪ ጎማ አለ።"
+    },
+    "contactPerson": "የተሽከርካሪ ሽያጭ ኮሚቴ",
+    "visitingHours": "ከሰኞ እስከ ዓርብ፣ 09:00–12:00 የምሥራቅ አፍሪካ ሰዓት",
+    "mainImage": "/sedan-demo.webp",
+    "gallery": [
+      {
+        "src": "/sedan-demo.webp",
+        "caption": "የተሽከርካሪው ውጫዊ ገጽታ"
+      },
+      {
+        "src": "/interior-demo.webp",
+        "caption": "የተሽከርካሪው ውስጣዊ ክፍል"
+      },
+      {
+        "src": "/engine-demo.webp",
+        "caption": "የሞተር ክፍል"
+      }
+    ],
+    "noticeRef": "ሙከራ/ተ/፩"
+  },
   {
     id: 'EVP-2407-018',
     title: '2017 Fleet Sedan · Toyota Corolla 1.6L',
@@ -261,6 +310,99 @@ const VEHICLE_LOTS: VehicleLot[] = [
 
 // 2. PROCUREMENT TENDERS FIXTURES (Public, NGO, Private - Matching Stitch Examples)
 const PROCUREMENT_TENDERS: ProcurementTender[] = [
+  {
+    "id": "ሙከራ-መ-፩",
+    "title": "የትምህርት ቤት ዴስኮች ግዥ",
+    "category": "Public",
+    "categoryLabel": "የመንግሥት ግዥ",
+    "sector": "የትምህርት ቁሳቁስ",
+    "issuer": "የከተማ ትምህርት ጽሕፈት ቤት (ምናባዊ ተቋም)",
+    "refNumber": "ሙከራ/መ/፩",
+    "closeIso": "2026-12-30T14:00:00+03:00",
+    "closeLabel": "ዲሴምበር 30፣ 2026 · 14:00 የምሥራቅ አፍሪካ ሰዓት",
+    "cpoAmount": "15,000 ብር",
+    "documentFee": "ክፍያ የለውም",
+    "region": "አዲስ አበባ",
+    "gazette": "የሙከራ ጨረታ ማስታወቂያ",
+    "summary": "ይህ የሙከራ ጨረታ ነው። የከተማ ትምህርት ጽሕፈት ቤት ብቁ ተጫራቾችን ይጋብዛል። ባለ ሁለት መቀመጫ ዴስኮችን ማምረትና ማቅረብ።",
+    "scopeOfWork": [
+      "ባለ ሁለት መቀመጫ ዴስኮችን ማምረትና ማቅረብ።",
+      "ዴስኮቹን በ30 ቀናት ውስጥ ማስረከብ።"
+    ],
+    "eligibilityRequirements": [
+      "የታደሰ የንግድ ፈቃድ ማቅረብ።",
+      "የግብር ከፋይ መለያ ቁጥር ማቅረብ።"
+    ],
+    "contactPerson": "የግዥ ክፍል",
+    "submissionAddress": "የግዥ ጽሕፈት ቤት፣ አዲስ አበባ",
+    "fullNoticeText": [
+      "ይህ ለማሳያ ብቻ የተዘጋጀ ምናባዊ ጨረታ ነው። ባለ ሁለት መቀመጫ ዴስኮችን ማምረትና ማቅረብ።",
+      "የጨረታ ሰነዱ ከግዥ ክፍሉ በነፃ ይገኛል።",
+      "የጨረታ ሰነዶች እስከ ዲሴምበር 30፣ 2026 በ14:00 የምሥራቅ አፍሪካ ሰዓት በታሸገ ፖስታ መቅረብ አለባቸው።"
+    ]
+  },
+  {
+    "id": "ሙከራ-ድ-፩",
+    "title": "የንጽሕና ቁሳቁስ ግዥ",
+    "category": "NGO",
+    "categoryLabel": "መንግሥታዊ ያልሆነ ድርጅት",
+    "sector": "የንጽሕና ቁሳቁስ",
+    "issuer": "የማኅበረሰብ ድጋፍ ማኅበር (ምናባዊ ተቋም)",
+    "refNumber": "ሙከራ/ድ/፩",
+    "closeIso": "2026-12-30T14:00:00+03:00",
+    "closeLabel": "ዲሴምበር 30፣ 2026 · 14:00 የምሥራቅ አፍሪካ ሰዓት",
+    "cpoAmount": "10,000 ብር",
+    "documentFee": "ክፍያ የለውም",
+    "region": "አዲስ አበባ",
+    "gazette": "የሙከራ ጨረታ ማስታወቂያ",
+    "summary": "ይህ የሙከራ ጨረታ ነው። የማኅበረሰብ ድጋፍ ማኅበር ብቁ ተጫራቾችን ይጋብዛል። ሳሙና፣ የውሃ መያዣና ሌሎች የንጽሕና ቁሳቁሶችን ማቅረብ።",
+    "scopeOfWork": [
+      "ሳሙና፣ የውሃ መያዣና ሌሎች የንጽሕና ቁሳቁሶችን ማቅረብ።",
+      "ከአቅርቦት በፊት አንድ የተሟላ ናሙና ማሳየት።"
+    ],
+    "eligibilityRequirements": [
+      "የታደሰ የንግድ ፈቃድ ማቅረብ።",
+      "የግብር ከፋይ መለያ ቁጥር ማቅረብ።"
+    ],
+    "contactPerson": "የግዥ ክፍል",
+    "submissionAddress": "የግዥ ጽሕፈት ቤት፣ አዲስ አበባ",
+    "fullNoticeText": [
+      "ይህ ለማሳያ ብቻ የተዘጋጀ ምናባዊ ጨረታ ነው። ሳሙና፣ የውሃ መያዣና ሌሎች የንጽሕና ቁሳቁሶችን ማቅረብ።",
+      "የጨረታ ሰነዱ ከግዥ ክፍሉ በነፃ ይገኛል።",
+      "የጨረታ ሰነዶች እስከ ዲሴምበር 30፣ 2026 በ14:00 የምሥራቅ አፍሪካ ሰዓት በታሸገ ፖስታ መቅረብ አለባቸው።"
+    ]
+  },
+  {
+    "id": "ሙከራ-ግ-፩",
+    "title": "የቢሮ ጽዳት አገልግሎት",
+    "category": "Private",
+    "categoryLabel": "የግል ድርጅት",
+    "sector": "የጽዳት አገልግሎት",
+    "issuer": "የከተማ የንግድ ማዕከል (ምናባዊ ተቋም)",
+    "refNumber": "ሙከራ/ግ/፩",
+    "closeIso": "2026-12-30T14:00:00+03:00",
+    "closeLabel": "ዲሴምበር 30፣ 2026 · 14:00 የምሥራቅ አፍሪካ ሰዓት",
+    "cpoAmount": "8,000 ብር",
+    "documentFee": "ክፍያ የለውም",
+    "region": "አዲስ አበባ",
+    "gazette": "የሙከራ ጨረታ ማስታወቂያ",
+    "summary": "ይህ የሙከራ ጨረታ ነው። የከተማ የንግድ ማዕከል ብቁ ተጫራቾችን ይጋብዛል። የቢሮ ክፍሎችንና የጋራ መጠቀሚያ ቦታዎችን በየቀኑ ማጽዳት።",
+    "scopeOfWork": [
+      "የቢሮ ክፍሎችንና የጋራ መጠቀሚያ ቦታዎችን በየቀኑ ማጽዳት።",
+      "የጽዳት መሣሪያዎችንና ቁሳቁሶችን ማቅረብ።"
+    ],
+    "eligibilityRequirements": [
+      "የታደሰ የንግድ ፈቃድ ማቅረብ።",
+      "የግብር ከፋይ መለያ ቁጥር ማቅረብ።"
+    ],
+    "contactPerson": "የግዥ ክፍል",
+    "submissionAddress": "የግዥ ጽሕፈት ቤት፣ አዲስ አበባ",
+    "fullNoticeText": [
+      "ይህ ለማሳያ ብቻ የተዘጋጀ ምናባዊ ጨረታ ነው። የቢሮ ክፍሎችንና የጋራ መጠቀሚያ ቦታዎችን በየቀኑ ማጽዳት።",
+      "የጨረታ ሰነዱ ከግዥ ክፍሉ በነፃ ይገኛል።",
+      "የጨረታ ሰነዶች እስከ ዲሴምበር 30፣ 2026 በ14:00 የምሥራቅ አፍሪካ ሰዓት በታሸገ ፖስታ መቅረብ አለባቸው።"
+    ]
+  },
   // Stitch Example 1: School Desks (Public Tender)
   {
     id: 'PUB-2026-DESK-01',
@@ -2228,7 +2370,7 @@ export default function BidEthiopiaPortal() {
                 </span>
                 <span className="text-xs text-[#6E695F] flex items-center gap-1">
                   <MapPin className="size-3.5 text-[#8C571C]" />
-                  {selectedVehicle.region} Regional Jurisdiction
+                  {selectedVehicle.regionLabel ?? selectedVehicle.region}
                 </span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-[#16201B] tracking-tight">
@@ -2279,11 +2421,11 @@ export default function BidEthiopiaPortal() {
                     <div className="absolute bottom-2 left-2 right-2 bg-black/65 backdrop-blur-xs text-white text-xs px-3 py-1.5 rounded-lg flex items-center justify-between">
                       <span className="truncate">
                         {!isSubscriberUnlocked
-                          ? 'Official Public Inspection Photo 1 of 4'
+                          ? 'Public cover photo'
                           : selectedVehicle.gallery[activeVehiclePhotoIndex]?.caption}
                       </span>
                       <span className="shrink-0 text-[11px] text-white/80 font-mono">
-                        {!isSubscriberUnlocked ? '1 of 1 shown' : `${activeVehiclePhotoIndex + 1} of 4`}
+                        {!isSubscriberUnlocked ? '1 of 1 shown' : `${activeVehiclePhotoIndex + 1} of ${selectedVehicle.gallery.length}`}
                       </span>
                     </div>
                   </div>
@@ -2296,7 +2438,7 @@ export default function BidEthiopiaPortal() {
                           <Eye className="size-3.5" />
                           Selectable Inspection Views (Click to inspect)
                         </span>
-                        <span className="text-[11px]">4 Photos Available</span>
+                        <span className="text-[11px]">{selectedVehicle.gallery.length} Photos Available</span>
                       </div>
                       <div className="grid grid-cols-4 gap-2.5">
                         {selectedVehicle.gallery.map((item, idx) => (
@@ -2322,7 +2464,7 @@ export default function BidEthiopiaPortal() {
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-[#8C571C] flex items-center gap-1.5">
                           <LockKeyhole className="size-3.5 text-[#8C571C]" />
-                          Extra Inspection Photos Gated (3 Restricted)
+                          Extra Inspection Photos Gated ({selectedVehicle.gallery.length - 1} Restricted)
                         </span>
                         <button
                           onClick={() => setIsSubscriberUnlocked(true)}
@@ -2335,13 +2477,13 @@ export default function BidEthiopiaPortal() {
                         <div className="relative aspect-[16/10] rounded-lg overflow-hidden border-2 border-[#1B4332]">
                           <Image src={selectedVehicle.mainImage} alt="Cover" fill sizes="120px" className="object-cover" />
                         </div>
-                        {[2, 3, 4].map((num) => (
+                        {selectedVehicle.gallery.slice(1).map((_, index) => (
                           <div
-                            key={num}
+                            key={index}
                             className="relative aspect-[16/10] rounded-lg bg-[#EEEAE0] border border-[#E5DFD5] flex flex-col items-center justify-center text-center p-1"
                           >
                             <LockKeyhole className="size-3.5 text-[#8C571C] mb-0.5" />
-                            <span className="text-[10px] font-bold text-[#8C571C]">Photo {num}</span>
+                            <span className="text-[10px] font-bold text-[#8C571C]">Photo {index + 2}</span>
                             <span className="text-[9px] text-[#6E695F]">Subscriber</span>
                           </div>
                         ))}
