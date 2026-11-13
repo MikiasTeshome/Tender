@@ -11,3 +11,23 @@
 .bid-disclosure > .button { display:list-item; list-style-position:inside; width:fit-content; }
 
 .detail > .badge { width:fit-content; }
+
+:root { --paper:#fafaf4; --green:#1b4332; }
+.directory-layout { display:grid; gap:20px; }
+.filter-panel { display:none; margin-top:10px; padding:16px; border:1px solid var(--line); border-radius:12px; background:#fff; }
+.filter-panel.is-open { display:block; }
+.filter-panel .filters { border:0; padding:14px 0; }
+.directory-results { min-width:0; }
+.directory-results .directory-actions { margin:0 0 14px; }
+@media (min-width:900px) {
+  .directory-layout { grid-template-columns:220px minmax(0,1fr); align-items:start; }
+  .directory-sidebar .filter-toggle { display:none; }
+  .directory-sidebar .filter-panel { display:block; margin:0; }
+  .filter-panel .filters { grid-template-columns:1fr; }
+}
+
+.detail-content { display:grid; gap:15px; min-width:0; }
+.detail-content > .badge { width:fit-content; }
+@media (min-width:900px) {
+  .detail-with-cover { max-width:none; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); align-items:start; gap:28px; }
+}

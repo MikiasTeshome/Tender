@@ -83,8 +83,9 @@ function Photo({id,api}) {
 
 function Detail({item,api,me,saved,onSave,subscribe,signIn}) {
   const info = item.details;
-  return <article className="surface detail">
+  return <article className={item.vehicle && item.cover ? "surface detail detail-with-cover" : "surface detail"}>
     {item.vehicle && item.cover && <img className="detail-cover" src={'/api/photos/' + item.cover} alt={item.title} />}
+    <div className="detail-content">
     <div className="eyebrow">{item.vehicle ? 'Vehicle bid' : sections.find(([key]) => key === item.sector)?.[1]}</div>
     <h1>{item.title}</h1>
     <p className="deadline">{item.status === 'active' ? 'Closes' : item.status} · {format(item.deadline)} EAT</p>
@@ -100,10 +101,12 @@ function Detail({item,api,me,saved,onSave,subscribe,signIn}) {
       </details> : info.sourceUrl && <a className="primary button" href={info.sourceUrl} target="_blank" rel="noreferrer">View bidding instructions ↗</a>}
     </>}
     <div className="detail-actions"><button className="outline" onClick={me ? onSave : signIn}>{saved ? 'Remove from saved' : 'Save opportunity'}</button></div>
+    </div>
   </article>;
 }
 
 export default function Portal({authUrl,authKey}) {
+  const [showFilters, setShowFilters] = useState(false);
   const client = useMemo(() => authUrl && authKey ? createClient(authUrl,authKey) : null,[authUrl,authKey]);
   const [session,setSession] = useState(null);
   const [me,setMe] = useState(null);
@@ -265,7 +268,11 @@ export default function Portal({authUrl,authKey}) {
         </section>}
         <section className="directory" id="directory">
           <h2>{title}</h2>
-          <details className="browse-filters"><summary>Filters</summary>
+          <div className="directory-layout">
+          <aside className="directory-sidebar" aria-label="Listing filters">
+          <button className="outline filter-toggle" aria-expanded={showFilters} aria-controls="listing-filters" onClick={() => setShowFilters(!showFilters)}>Filters</button>
+          <div id="listing-filters" className={showFilters ? "filter-panel is-open" : "filter-panel"}>
+          <h3>Filter opportunities</h3>
           <div className="filters">
             <label>Region<input placeholder="Any region" value={filters.region} onChange={(e) => set('region',e.target.value)} /></label>
             <label>Access<select value={filters.access} onChange={(e) => set('access',e.target.value)}><option value="">All access</option><option value="free">Free</option><option value="paid">Subscriber</option></select></label>
@@ -274,8 +281,11 @@ export default function Portal({authUrl,authKey}) {
               <label>Make<input value={filters.make} onChange={(e) => set('make',e.target.value)} /></label>
               <label>Model<input value={filters.model} onChange={(e) => set('model',e.target.value)} /></label></>}
           </div>
-          </details>
-          <div className="split directory-actions"><button className="link" onClick={() => section('')}>Clear filters</button>
+          <button className="link" onClick={() => section(filters.section)}>Clear filters</button>
+          </div>
+          </aside>
+          <div className="directory-results">
+          <div className="split directory-actions">
             {me ? <form className="inline" onSubmit={(event) => {event.preventDefault();void run(async () => {
               await api('searches',{method:'POST',data:{label:searchName,filters}});setSearchName('');await refresh();setStatus('Search saved.');
             });}}><input aria-label="Saved search name" placeholder="Name this search" value={searchName} onChange={(event) => setSearchName(event.target.value)} required /><button className="outline">Save search</button></form> :
@@ -287,6 +297,8 @@ export default function Portal({authUrl,authKey}) {
             const result = await api('listings?' + query);
             setCatalog({next:result.next,items:[...new Map([...catalog.items,...result.items].map((item) => [item.id,item])).values()]});
           })}>Load more</button>}
+          </div>
+          </div>
         </section>
       </>}
     </main>
