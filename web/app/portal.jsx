@@ -1,5 +1,7 @@
 'use client';
 
+import Brand from './brand.jsx';
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import Admin from './staff.jsx';
@@ -42,7 +44,7 @@ function Auth({client}) {
       setBusy(false);
     }
   }
-  return <section className="surface narrow"><div className="eyebrow">Your account</div><h2>Sign in to Bid Ethiopia</h2>
+  return <section className="surface narrow"><div className="eyebrow">Your account</div><h2>Sign in to Fanos Tender</h2>
     <p>Save opportunities, get alerts, and manage your subscription.</p>
     <form className="stack" onSubmit={submit}>
       <label>Email address<input type="email" value={email} disabled={sent} required onChange={(e) => setEmail(e.target.value)} /></label>
@@ -219,7 +221,7 @@ export default function Portal({authUrl,authKey}) {
 
   return <>
     <header className="top"><div className="shell nav">
-      <button className="brand" onClick={() => {go('browse');setFilters(initial);}}><span className="mark">B</span> Bid Ethiopia</button>
+      <button className="brand" onClick={() => {go('browse');setFilters(initial);}}><Brand /></button>
       <nav aria-label="Main navigation">
         <button onClick={() => section('')}>Browse</button><button onClick={() => section('vehicle')}>Vehicle bids</button>
         <button onClick={() => go('plans')}>Subscriptions</button>
@@ -302,7 +304,7 @@ export default function Portal({authUrl,authKey}) {
         </section>
       </>}
     </main>
-    <footer><div className="shell split"><strong>Bid Ethiopia</strong><span>All closing times shown in Ethiopia time (EAT).</span></div></footer>
+    <footer><div className="shell split"><strong>Fanos Tender</strong><span>All closing times shown in Ethiopia time (EAT).</span></div></footer>
   </>;
 }
 

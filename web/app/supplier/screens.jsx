@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import Brand from '../brand.jsx';
+
 import { useState } from 'react';
 import { Icon, sectionIcons } from '../stitch-ui.jsx';
 import { AccessBadge, ListingStack, Photo, VehicleRailCard } from './components.jsx';
@@ -12,7 +14,7 @@ export function HomeScreen({q, setQ, items, busy, error, onSection, onOpen, onPr
     <div className="phone-top phone-only">
       <div className="app-home-bar">
         <div className="page-head">
-          <p className="phone-brand">Bid Ethiopia</p>
+          <Brand />
           <span className="badge demo">DEMO</span>
         </div>
         <button type="button" className="avatar-btn" onClick={onProfile} aria-label="Profile">
@@ -32,7 +34,7 @@ export function HomeScreen({q, setQ, items, busy, error, onSection, onOpen, onPr
     </div>
     <div className="desk-home-intro desk-only">
       <div>
-        <h1 className="serif desk-home-title">Bid Ethiopia</h1>
+        <h1 className="serif desk-home-title">Fanos Tender</h1>
         <p className="desk-home-tagline">Find a bid. Judge the lot. Bid with the issuer.</p>
       </div>
     </div>
@@ -346,7 +348,7 @@ export function ProfileScreen({me, language, onLanguage, onSignIn, onSignOut, on
     </div>
     <div className="info-box">
       <Icon name="info" size={16} />
-      <p>Bid Ethiopia is an informational directory prototype. DEMO listings are labeled. Configure Supabase for real sign-in and payment references.</p>
+      <p>Fanos Tender is an informational directory prototype. DEMO listings are labeled. Configure Supabase for real sign-in and payment references.</p>
     </div>
   </section>;
 }
@@ -395,7 +397,7 @@ export function AuthScreen({client, onBack, onDemoSignIn}) {
     </div>
     <div className="auth-hero">
       <div className="auth-gavel"><Icon name="gavel" size={28} /></div>
-      <h1>Sign in to Bid Ethiopia</h1>
+      <h1>Sign in to Fanos Tender</h1>
       <p>Access official tenders, saved motor auctions, verified bank deposits, and critical closing alerts across your field devices.</p>
     </div>
     <div className="auth-notice">

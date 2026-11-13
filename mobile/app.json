@@ -1,6 +1,7 @@
 {
   "expo": {
-    "name": "Bid Ethiopia",
+    "name": "Fanos Tender",
+    "icon": "./assets/fanos-tender-icon.png",
     "slug": "bid-ethiopia",
     "scheme": "bidethiopia",
     "version": "1.0.0",

@@ -183,7 +183,16 @@ export default function App() {
   const showSaved = saved.some(({id}) => id === item?.id);
   return <SafeAreaView style={styles.root}>
     <StatusBar barStyle="dark-content" />
-    <View style={styles.nav}><Pressable accessibilityRole="button" accessibilityLabel="Bid Ethiopia home" onPress={goHome}><Text style={styles.logo}>Bid Ethiopia</Text></Pressable><Button label={account ? 'Profile' : 'Sign in'} onPress={() => go(account ? 'account' : 'signIn')} /></View>
+    <View style={styles.nav}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Fanos Tender, ፋኖስ ጨረታ, home" onPress={goHome} style={styles.brand}>
+        <Image source={require('./assets/fanos-tender-icon.png')} style={styles.brandIcon} accessible={false} />
+        <View style={styles.brandNames}>
+          <Text style={styles.logo}>Fanos Tender</Text>
+          <Text style={styles.amharic}>ፋኖስ ጨረታ</Text>
+        </View>
+      </Pressable>
+      <Button label={account ? 'Profile' : 'Sign in'} onPress={() => go(account ? 'account' : 'signIn')} />
+    </View>
     <ScrollView key={view + selected + (directory ? '-directory' : '')} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       {!!status && <Text accessibilityLiveRegion="polite" style={styles.notice}>{status}</Text>}
       {view !== 'browse' && <Button label="← Browse bids" onPress={() => go('browse')} />}
@@ -312,7 +321,11 @@ export default function App() {
 const styles = StyleSheet.create({
   root:{flex:1,backgroundColor:'#fafaf4',paddingTop:Platform.OS === 'android' ? StatusBar.currentHeight : 0},
   nav:{backgroundColor:'#fff',paddingHorizontal:16,paddingVertical:10,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
-  logo:{fontSize:26,fontFamily:'serif',fontWeight:'700',color:'#1b4332'},container:{padding:16,gap:14,paddingBottom:24},
+  brand:{flexDirection:'row',alignItems:'center',gap:8,flexShrink:1,minHeight:44},
+  brandIcon:{width:40,height:40},brandNames:{flexShrink:1},
+  logo:{fontSize:18,fontWeight:'700',color:'#1B4332'},
+  amharic:{fontSize:13,color:'#1B4332'},
+  container:{padding:16,gap:14,paddingBottom:24},
   sectionTitle:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},
   gallery:{gap:12},
   deadline:{gap:4,padding:12,backgroundColor:'#e3eedf',borderRadius:10},

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
+import Brand from './brand.jsx'
 import {
   ArrowLeft,
   ArrowRight,
@@ -936,15 +937,10 @@ export default function BidEthiopiaPortal() {
           <button
             onClick={() => navigateTo('home')}
             className="flex items-center gap-2 text-left group focus:outline-hidden"
-            aria-label="Bid Ethiopia - Go to Home"
+            aria-label="Fanos Tender - Go to Home"
           >
-            <div className="flex size-7.5 sm:size-8 items-center justify-center rounded-lg bg-[#1B4332] text-white shadow-xs group-hover:bg-[#2D6A4F] transition shrink-0">
-              <Gavel className="size-3.5 sm:size-4" />
-            </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-sm sm:text-base font-extrabold tracking-tight text-[#16201B] whitespace-nowrap">
-                Bid Ethiopia
-              </span>
+              <Brand />
               <span className="rounded border border-[#C8C2B3] bg-[#EFEBE1] px-1 py-0.2 text-[9px] sm:text-[10px] font-bold tracking-widest text-[#635E53] shrink-0">
                 DEMO
               </span>
@@ -3663,7 +3659,7 @@ export default function BidEthiopiaPortal() {
       <footer className="mt-auto border-t border-[#E5DFD5] bg-[#FFFFFF] px-4 sm:px-6 lg:px-8 py-5 text-xs text-[#6E695F]">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-[#16201B]">Bid Ethiopia</span>
+            <span className="font-bold text-[#16201B]">Fanos Tender</span>
             <span>·</span>
             <span>Stitch Android Desktop Port · All Data Fictional</span>
           </div>

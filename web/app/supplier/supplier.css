@@ -82,7 +82,7 @@
   display: inline-flex; align-items: center; gap: 10px;
   border: 0; background: transparent; padding: 0; color: #fff; text-align: left;
 }
-.site-footer-logo span { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.site-footer-logo > span { display: inline-flex; align-items: center; gap: 8px; }
 .site-footer-logo strong {
   font-family: var(--serif); font-size: 1.15rem; font-weight: 700; color: #fff;
 }

@@ -1,5 +1,28 @@
 @import "tailwindcss";
 
+.fanos-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.fanos-brand img {
+  flex-shrink: 0;
+}
+
+.fanos-brand-names {
+  display: grid;
+  color: #1B4332;
+  font-size: 0.875rem;
+  line-height: 1.2;
+}
+
+.fanos-brand-names [lang="am"] {
+  font-family: "Noto Sans Ethiopic", Nyala, sans-serif;
+  font-size: 0.75rem;
+}
+
 @layer base {
   :root {
     --background: #f7f5f0;
