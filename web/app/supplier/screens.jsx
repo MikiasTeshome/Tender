@@ -553,6 +553,11 @@ export function AlertsScreen({items, onOpen, onHome}) {
 
 export function PlansScreen({me, plans, plansError, payments, term, setTerm, reference, setReference, onSubmit, onAuth, onBack}) {
   const priced = plans?.plans?.filter((plan) => plan.price) ?? [];
+  const showPreviewPrices = !!plansError || (!!plans && !priced.length);
+  const visiblePlans = showPreviewPrices
+    ? [{months: 1, price: 500}, {months: 3, price: 1275}, {months: 6, price: 1860}, {months: 12, price: 3240}]
+    : plans?.plans ?? [];
+  const monthlyPrice = Number(visiblePlans.find((plan) => plan.months === 1)?.price);
   return <section className="stitch-plans">
     <button type="button" className="text-back" onClick={onBack}><Icon name="back" size={18} /> Back</button>
     <div className="page-head"><h1 className="serif">Subscriptions</h1><span className="badge demo">DEMO</span></div>
@@ -564,23 +569,29 @@ export function PlansScreen({me, plans, plansError, payments, term, setTerm, ref
       </div>
     )}
     {plansError && <div className="empty" role="alert">{plansError}</div>}
-    {plans ? <>
+    {(plans || showPreviewPrices) ? <>
       <div className="plans">
-        {plans.plans.map((plan) => (
-          <button
+        {visiblePlans.map((plan) => {
+          const regularPrice = monthlyPrice * plan.months;
+          const savings = plan.price && regularPrice > 0
+            ? Math.round((1 - Number(plan.price) / regularPrice) * 100)
+            : 0;
+          return <button
             key={plan.months}
             type="button"
             className={'plan ' + (String(plan.months) === term ? 'selected' : '')}
-            disabled={!plan.price}
+            disabled={showPreviewPrices || !plan.price}
             onClick={() => setTerm(String(plan.months))}
           >
             <strong>{terms[plan.months]}</strong>
             <span>{plan.price ? 'ETB ' + Number(plan.price).toLocaleString('en-ET') : 'Unavailable'}</span>
-          </button>
-        ))}
+            {savings > 0 && <span className="badge">Save {savings}%</span>}
+            {plan.months === 6 && !!plan.price && <span className="badge">Recommended</span>}
+          </button>;
+        })}
       </div>
-      {!priced.length && <div className="empty">Subscription prices are not configured yet.</div>}
-      {plans.instructions
+      {showPreviewPrices && <p role="status">Preview prices. Payments are unavailable until Staff configures the subscription plans.</p>}
+      {plans?.instructions
         ? <div className="notice-text pay-instructions"><h3>Payment instructions</h3><p>{plans.instructions}</p></div>
         : <div className="empty">Payment instructions are not configured yet.</div>}
     </> : !plansError && <p role="status">Loading plans…</p>}
