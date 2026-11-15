@@ -91,6 +91,10 @@ export default function Shell({authUrl = '', authKey = ''}) {
       const next = readRoute();
       setRoute({bid: next.bid, screen: next.screen, section: next.section});
       if (next.bid) return;
+      if (next.screen === 'plans') {
+        const requestedTerm = new URLSearchParams(window.location.search).get('term');
+        if (['1', '3', '6', '12'].includes(requestedTerm)) setTerm(requestedTerm);
+      }
       if (next.screen === 'catalog') {
         setFilters({
           q: next.q || '',
