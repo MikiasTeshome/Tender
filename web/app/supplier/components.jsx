@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import Brand from '../brand.jsx';
+
 import { useEffect, useState } from 'react';
 import { Icon } from '../stitch-ui.jsx';
 import { cleanTitle, closingInfo, conditionLabel, formatDeadline, sections } from './utils.js';
@@ -124,9 +126,8 @@ export function DeskNav({
   return <header className="desk-nav desk-only" aria-label="Site navigation">
     <div className="desk-nav-inner">
       <button type="button" className="desk-brand" onClick={onHome}>
-        <span className="desk-mark"><Icon name="gavel" size={18} /></span>
-        <span className="desk-brand-text">
-          <strong>Bid Ethiopia</strong>
+        <Brand />
+        <span>
           <span className="badge demo">DEMO</span>
         </span>
       </button>
@@ -172,9 +173,8 @@ export function SiteFooter({
   return <footer className={'site-footer' + (compact ? ' has-dock-clearance' : '')}>
     <div className="site-footer-inner site-footer-slim">
       <button type="button" className="site-footer-logo" onClick={onHome}>
-        <span className="desk-mark"><Icon name="gavel" size={18} /></span>
+        <Brand />
         <span>
-          <strong>Bid Ethiopia</strong>
           <span className="badge demo">DEMO</span>
         </span>
       </button>
@@ -188,7 +188,7 @@ export function SiteFooter({
       </nav>
     </div>
     <div className="site-footer-bar">
-      <p>© 2026 Bid Ethiopia · Closings in EAT</p>
+      <p>© 2026 Fanos Tender · Closings in EAT</p>
       <p>Bid with the issuer — not on this site</p>
     </div>
   </footer>;

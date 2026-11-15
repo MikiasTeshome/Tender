@@ -3,12 +3,12 @@ import { referenceCrop, vehicleReference as vehicle } from '../../../mobile/vehi
 import './preview.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = {title:'Vehicle detail preview | Bid Ethiopia',robots:{index:false,follow:false}};
+export const metadata = {title:'Vehicle detail preview | Fanos Tender',robots:{index:false,follow:false}};
 
 export default function VehiclePreview() {
   if (!process.env.VEHICLE_REFERENCE_PREVIEW) notFound();
   return <main className="shell vp">
-    <header className="vp-header"><a href="/">← Bid Ethiopia</a><span>Design preview</span></header>
+    <header className="vp-header"><a href="/">← Fanos Tender</a><span>Design preview</span></header>
     <p className="vp-note">Reference listing from GoBid, Sandton. Review the layout here. Confirm availability with the issuer.</p>
     <div className="vp-title">
       <div className="vp-tags"><span>Lot {vehicle.lot}</span><span className="vp-damage">{vehicle.condition}</span></div>

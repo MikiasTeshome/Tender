@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+.fanos-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.fanos-brand img {
+  flex-shrink: 0;
+}
+
+.fanos-brand-names {
+  display: grid;
+  color: #1B4332;
+  font-size: 0.875rem;
+  line-height: 1.2;
+}
+
+.fanos-brand-names [lang="am"] {
+  font-family: "Noto Sans Ethiopic", Nyala, sans-serif;
+  font-size: 0.75rem;
+}
+
+@layer base {
+  :root {
+    --background: #f7f5f0;
+    --foreground: #1c2822;
+    --card: #ffffff;
+    --card-foreground: #1c2822;
+    --primary: #144231;
+    --primary-foreground: #ffffff;
+    --muted: #f1ede4;
+    --muted-foreground: #6e695f;
+    --border: #ded8cb;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: #f7f5f0;
+    color: #1c2822;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+}

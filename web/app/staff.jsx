@@ -107,7 +107,7 @@ export default function Admin({api, onBack}) {
   return <section className="staff-console">
     <div className="staff-split">
       <div>
-        <p className="staff-eyebrow">Staff console · Bid Ethiopia only</p>
+        <p className="staff-eyebrow">Staff console · Fanos Tender only</p>
         <h1>Manage the directory</h1>
       </div>
       {onBack && <button type="button" className="staff-outline" onClick={onBack}>Back to site</button>}

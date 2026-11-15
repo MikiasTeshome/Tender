@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import Brand from '../brand.jsx';
+
 import { useState } from 'react';
 import { Icon, sectionIcons } from '../stitch-ui.jsx';
 import { AccessBadge, ListingStack, Photo, VehicleRailCard } from './components.jsx';
@@ -12,7 +14,7 @@ export function HomeScreen({q, setQ, items, busy, error, onSection, onOpen, onPr
     <div className="phone-top phone-only">
       <div className="app-home-bar">
         <div className="page-head">
-          <p className="phone-brand">Bid Ethiopia</p>
+          <Brand />
           <span className="badge demo">DEMO</span>
         </div>
         <button type="button" className="avatar-btn" onClick={onProfile} aria-label="Profile">
@@ -32,7 +34,7 @@ export function HomeScreen({q, setQ, items, busy, error, onSection, onOpen, onPr
     </div>
     <div className="desk-home-intro desk-only">
       <div>
-        <h1 className="serif desk-home-title">Bid Ethiopia</h1>
+        <h1 className="serif desk-home-title">Fanos Tender</h1>
         <p className="desk-home-tagline">Find a bid. Judge the lot. Bid with the issuer.</p>
       </div>
     </div>
@@ -346,7 +348,7 @@ export function ProfileScreen({me, language, onLanguage, onSignIn, onSignOut, on
     </div>
     <div className="info-box">
       <Icon name="info" size={16} />
-      <p>Bid Ethiopia is an informational directory prototype. DEMO listings are labeled. Configure Supabase for real sign-in and payment references.</p>
+      <p>Fanos Tender is an informational directory prototype. DEMO listings are labeled. Configure Supabase for real sign-in and payment references.</p>
     </div>
   </section>;
 }
@@ -395,7 +397,7 @@ export function AuthScreen({client, onBack, onDemoSignIn}) {
     </div>
     <div className="auth-hero">
       <div className="auth-gavel"><Icon name="gavel" size={28} /></div>
-      <h1>Sign in to Bid Ethiopia</h1>
+      <h1>Sign in to Fanos Tender</h1>
       <p>Access official tenders, saved motor auctions, verified bank deposits, and critical closing alerts across your field devices.</p>
     </div>
     <div className="auth-notice">
@@ -551,6 +553,11 @@ export function AlertsScreen({items, onOpen, onHome}) {
 
 export function PlansScreen({me, plans, plansError, payments, term, setTerm, reference, setReference, onSubmit, onAuth, onBack}) {
   const priced = plans?.plans?.filter((plan) => plan.price) ?? [];
+  const showPreviewPrices = !!plansError || (!!plans && !priced.length);
+  const visiblePlans = showPreviewPrices
+    ? [{months: 1, price: 500}, {months: 3, price: 1275}, {months: 6, price: 1860}, {months: 12, price: 3240}]
+    : plans?.plans ?? [];
+  const monthlyPrice = Number(visiblePlans.find((plan) => plan.months === 1)?.price);
   return <section className="stitch-plans">
     <button type="button" className="text-back" onClick={onBack}><Icon name="back" size={18} /> Back</button>
     <div className="page-head"><h1 className="serif">Subscriptions</h1><span className="badge demo">DEMO</span></div>
@@ -562,23 +569,29 @@ export function PlansScreen({me, plans, plansError, payments, term, setTerm, ref
       </div>
     )}
     {plansError && <div className="empty" role="alert">{plansError}</div>}
-    {plans ? <>
+    {(plans || showPreviewPrices) ? <>
       <div className="plans">
-        {plans.plans.map((plan) => (
-          <button
+        {visiblePlans.map((plan) => {
+          const regularPrice = monthlyPrice * plan.months;
+          const savings = plan.price && regularPrice > 0
+            ? Math.round((1 - Number(plan.price) / regularPrice) * 100)
+            : 0;
+          return <button
             key={plan.months}
             type="button"
             className={'plan ' + (String(plan.months) === term ? 'selected' : '')}
-            disabled={!plan.price}
+            disabled={showPreviewPrices || !plan.price}
             onClick={() => setTerm(String(plan.months))}
           >
             <strong>{terms[plan.months]}</strong>
             <span>{plan.price ? 'ETB ' + Number(plan.price).toLocaleString('en-ET') : 'Unavailable'}</span>
-          </button>
-        ))}
+            {savings > 0 && <span className="badge">Save {savings}%</span>}
+            {plan.months === 6 && !!plan.price && <span className="badge">Recommended</span>}
+          </button>;
+        })}
       </div>
-      {!priced.length && <div className="empty">Subscription prices are not configured yet.</div>}
-      {plans.instructions
+      {showPreviewPrices && <p role="status">Preview prices. Payments are unavailable until Staff configures the subscription plans.</p>}
+      {plans?.instructions
         ? <div className="notice-text pay-instructions"><h3>Payment instructions</h3><p>{plans.instructions}</p></div>
         : <div className="empty">Payment instructions are not configured yet.</div>}
     </> : !plansError && <p role="status">Loading plans…</p>}

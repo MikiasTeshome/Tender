@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { Icon, sectionIcons } from '../stitch-ui.jsx';
 import { Photo } from './components.jsx';
 import { cleanTitle, closingInfo, conditionLabel, formatDeadline, sections, shortLabels } from './utils.js';
+import Brand from '../brand.jsx';
 import './desktop.css';
 
 const conditionOptions = [['', 'Any condition'], ['used', 'Running'], ['damaged', 'Damaged'], ['salvage', 'Salvage']];
@@ -31,8 +32,7 @@ export function DeskHeader({
     <div className="dx-top">
       <div className="dx-wrap dx-top-row">
         <button type="button" className="dx-brand" onClick={onHome}>
-          <span className="dx-mark"><Icon name="gavel" size={20} /></span>
-          <span><strong>Bid Ethiopia</strong><small>Tenders &amp; vehicle bids</small></span>
+          <Brand />
         </button>
         <form className="dx-search" role="search" onSubmit={(event) => event.preventDefault()}>
           <select aria-label="Category" value={section} onChange={(event) => onSection(event.target.value)}>
