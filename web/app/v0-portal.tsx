@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Brand from './brand.jsx'
+import { HomePricing } from './supplier/screens.jsx'
 import {
   ArrowLeft,
   ArrowRight,
@@ -3793,6 +3794,11 @@ export default function BidEthiopiaPortal() {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+        {!selectedVehicle && !selectedTender && activeTab === 'home' && (
+          <div className="[--green:#1B4332] [--paper:#FAF8F5] [--line:#E5DFD5] [--mint:#EAF7EE]">
+            <HomePricing plans={null} onSelect={(months: number) => window.location.assign('/?screen=plans&term=' + months)} />
           </div>
         )}
       </main>
