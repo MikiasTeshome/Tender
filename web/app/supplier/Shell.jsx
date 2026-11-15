@@ -10,6 +10,7 @@ import {
   AuthScreen,
   CatalogScreen,
   DetailScreen,
+  HomePricing,
   HomeScreen,
   PlansScreen,
   ProfileScreen,
@@ -170,20 +171,35 @@ export default function Shell({authUrl = '', authKey = ''}) {
     return () => controller.abort();
   }, [api, route.bid]);
 
+  const showPricing = !route.bid && (route.screen === 'home' || route.screen === 'plans');
   useEffect(() => {
-    if (route.screen !== 'plans') return;
-    setPlans(null);
+    if (!showPricing) return;
+    const controller = new AbortController();
     setPlansError('');
-    api('plans')
+    api('plans', {signal: controller.signal})
       .then((result) => {
         setPlans(result);
-        if (!term && result.plans?.length) {
-          const first = result.plans.find((plan) => plan.price);
-          if (first) setTerm(String(first.months));
-        }
+        setTerm((current) => {
+          const available = result.plans.filter((plan) => plan.price).map((plan) => String(plan.months));
+          return available.includes(current) ? current : (available[0] ?? '');
+        });
       })
-      .catch((error) => setPlansError(errorText(error)));
-    if (accessToken) api('payments').then(setPayments).catch((error) => setStatus(errorText(error)));
+      .catch((error) => {
+        if (!controller.signal.aborted) {
+          setPlans(null);
+          setPlansError(errorText(error));
+        }
+      });
+    return () => controller.abort();
+  }, [api, showPricing]);
+
+  useEffect(() => {
+    if (!accessToken || route.screen !== 'plans') return;
+    const controller = new AbortController();
+    api('payments', {signal: controller.signal}).then(setPayments).catch((error) => {
+      if (!controller.signal.aborted) setStatus(errorText(error));
+    });
+    return () => controller.abort();
   }, [api, accessToken, route.screen]);
 
   async function run(action) {
@@ -392,6 +408,13 @@ export default function Shell({authUrl = '', authKey = ''}) {
     </div>
   );
 
+  const homepagePricing = screen === 'home' && (
+    <HomePricing plans={plans} onSelect={(months) => {
+      setTerm(String(months));
+      go('plans');
+    }} />
+  );
+
   const footer = (compact) => (
     <SiteFooter
       me={account}
@@ -493,6 +516,7 @@ export default function Shell({authUrl = '', authKey = ''}) {
       <main className="dx-shell">
         {statusBar}
         {body}
+        {homepagePricing}
       </main>
       {footer(false)}
     </div>;
@@ -555,6 +579,7 @@ export default function Shell({authUrl = '', authKey = ''}) {
             onProfile={() => go('profile')}
           />
         )}
+      {homepagePricing}
     </div>
 
     {footer(showDock || !!route.bid)}
