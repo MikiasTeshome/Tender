@@ -551,11 +551,75 @@ export function AlertsScreen({items, onOpen, onHome}) {
   </section>;
 }
 
+const previewSubscriptionPlans = [
+  {months: 1, price: 500},
+  {months: 3, price: 1275},
+  {months: 6, price: 1860},
+  {months: 12, price: 3240},
+];
+
+function subscriptionSavings(plan, monthlyPrice) {
+  const regularPrice = monthlyPrice * plan.months;
+  return plan.price && regularPrice > 0
+    ? Math.round((1 - Number(plan.price) / regularPrice) * 100)
+    : 0;
+}
+
+export function HomePricing({plans, onSelect}) {
+  const configuredPlans = plans?.plans?.filter((plan) => plan.price) ?? [];
+  const offers = configuredPlans.length ? configuredPlans : previewSubscriptionPlans;
+  const monthlyPrice = Number(offers.find((plan) => plan.months === 1)?.price);
+
+  return <section className="home-pricing" aria-labelledby="home-pricing-title">
+    <header>
+      <h2 id="home-pricing-title">Subscription pricing</h2>
+      {!configuredPlans.length && <p>Preview prices</p>}
+    </header>
+    <div className="home-pricing-grid">
+      {offers.map((plan) => {
+        const recommended = plan.months === 6;
+        const savings = subscriptionSavings(plan, monthlyPrice);
+        const title = plan.months === 12 ? '1 year' : plan.months === 1 ? '1 month' : plan.months + ' months';
+        return <article className={'home-pricing-card' + (recommended ? ' recommended' : '')} key={plan.months}>
+          {recommended && <div className="home-pricing-banner">Recommended</div>}
+          <h3>{title}</h3>
+          <p className="home-pricing-total">{Number(plan.price).toLocaleString('en-ET')} birr</p>
+          <p className="home-pricing-savings">{savings > 0 && <span className="badge">Save {savings}%</span>}</p>
+          <button type="button" className={recommended ? 'primary wide' : 'outline wide'} onClick={() => onSelect(plan.months)} aria-label={'View ' + title + ' plan'}>View plan</button>
+          <ul>
+            <li>Access paid tender details</li>
+            <li>View vehicle bidding instructions</li>
+            <li>Save tenders to revisit</li>
+          </ul>
+        </article>;
+      })}
+    </div>
+    <style>{`
+      .home-pricing { margin: 32px auto; padding: clamp(18px, 3vw, 40px); width: 100%; max-width: 1180px; border-radius: var(--radius-card); background: var(--paper); color: var(--green); }
+      .home-pricing > header { text-align: center; margin-bottom: 24px; }
+      .home-pricing h2 { margin: 0; font: 800 clamp(1.65rem, 4vw, 2.6rem)/1.15 var(--serif); }
+      .home-pricing header p { margin: 8px 0 0; }
+      .home-pricing-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+      .home-pricing-card { position: relative; display: flex; flex-direction: column; align-items: stretch; text-align: center; padding: 54px 16px 22px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-tile); overflow: hidden; }
+      .home-pricing-card.recommended { border-color: var(--green); box-shadow: var(--shadow); }
+      .home-pricing-banner { position: absolute; inset: 0 0 auto; padding: 9px 6px; font-weight: 800; background: var(--green); color: white; }
+      .home-pricing-card h3 { margin: 0; font-size: 1.05rem; }
+      .home-pricing-total { margin: 6px 0; font-size: clamp(1.4rem, 2.6vw, 2.15rem); font-weight: 800; font-variant-numeric: tabular-nums; }
+      .home-pricing-savings { margin: 0 0 14px; min-height: 24px; }
+      .home-pricing-card ul { display: grid; gap: 10px; margin: 20px 0 0; padding: 0; text-align: left; list-style: none; font-size: .88rem; }
+      .home-pricing-card li { display: flex; gap: 8px; }
+      .home-pricing-card li::before { content: '✓'; font-weight: 800; }
+      @media (max-width: 920px) { .home-pricing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      @media (max-width: 540px) { .home-pricing-grid { grid-template-columns: minmax(0, 1fr); } .home-pricing-card:not(.recommended) { padding-top: 22px; } }
+    `}</style>
+  </section>;
+}
+
 export function PlansScreen({me, plans, plansError, payments, term, setTerm, reference, setReference, onSubmit, onAuth, onBack}) {
   const priced = plans?.plans?.filter((plan) => plan.price) ?? [];
   const showPreviewPrices = !!plansError || (!!plans && !priced.length);
   const visiblePlans = showPreviewPrices
-    ? [{months: 1, price: 500}, {months: 3, price: 1275}, {months: 6, price: 1860}, {months: 12, price: 3240}]
+    ? previewSubscriptionPlans
     : plans?.plans ?? [];
   const monthlyPrice = Number(visiblePlans.find((plan) => plan.months === 1)?.price);
   return <section className="stitch-plans">
@@ -572,10 +636,7 @@ export function PlansScreen({me, plans, plansError, payments, term, setTerm, ref
     {(plans || showPreviewPrices) ? <>
       <div className="plans">
         {visiblePlans.map((plan) => {
-          const regularPrice = monthlyPrice * plan.months;
-          const savings = plan.price && regularPrice > 0
-            ? Math.round((1 - Number(plan.price) / regularPrice) * 100)
-            : 0;
+          const savings = subscriptionSavings(plan, monthlyPrice);
           return <button
             key={plan.months}
             type="button"
@@ -600,7 +661,7 @@ export function PlansScreen({me, plans, plansError, payments, term, setTerm, ref
         <label>Transaction reference
           <input value={reference} onChange={(event) => setReference(event.target.value)} required placeholder="Bank deposit reference" />
         </label>
-        <button type="submit" className="primary wide" disabled={!term || !plans?.instructions || !priced.length}>
+        <button type="submit" className="primary wide" disabled={!plans?.instructions || !priced.some((plan) => String(plan.months) === term)}>
           Submit for verification
         </button>
       </form>
