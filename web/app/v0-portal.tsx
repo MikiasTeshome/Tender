@@ -1390,86 +1390,62 @@ export default function BidEthiopiaPortal() {
         {/* ============================================================== */}
         {!selectedVehicle && !selectedTender && activeTab === 'home' && (
           <div className="space-y-8 animate-in fade-in duration-200">
-            {/* Search Hero Section (No invented verification claims) */}
-            <section className="rounded-2xl bg-gradient-to-b from-[#1B4332] to-[#143527] text-white p-6 sm:p-9 shadow-sm space-y-5">
-              <div className="space-y-2 max-w-3xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold text-[#D8F3DC] backdrop-blur-xs">
-                  <Sparkles className="size-3 text-[#E0B263]" />
-                  <span>Fictional Sample Prototype · Stitch Alignment</span>
-                </div>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-white">
-                  Ethiopian Tender & Asset Portal
-                </h1>
-                <p className="text-sm sm:text-base text-[#D8F3DC]/90 leading-relaxed max-w-2xl">
-                  Search across Vehicle Bids, Public Tenders, NGO Tenders, and Private Tenders in East Africa Time (EAT). All data and notices are fictional samples for evaluation.
-                </p>
-              </div>
+            {/* Search-first hero (kept from local design; mate portal wiring retained) */}
+            <section className="rounded-[28px] bg-gradient-to-br from-[#dff0e6] via-[#f3f5f0] to-[#e6ebe4] text-[#16201B] px-6 py-14 sm:px-10 sm:py-16 shadow-sm flex flex-col items-center text-center gap-4">
+              <h1 className="text-4xl sm:text-5xl md:text-[3.4rem] font-extrabold tracking-tight leading-[1.05] text-[#0b2f24]">
+                Find your next bid
+              </h1>
+              <p className="text-base sm:text-lg text-[#5f6b64] max-w-xl leading-relaxed">
+                Public, NGO and private tenders, plus vehicle lots, in one place.
+              </p>
 
-              {/* Universal Search Bar */}
-              <div className="bg-white rounded-xl p-2 sm:p-2.5 shadow-lg flex flex-col sm:flex-row items-center gap-2 border border-[#E5DFD5]">
-                <div className="relative flex-1 w-full flex items-center">
-                  <Search className="size-4 text-[#6E695F] absolute left-3 pointer-events-none" />
-                  <input
-                    type="text"
-                    placeholder="Search across Vehicle Bids, Public, NGO, and Private tenders..."
-                    value={tenderSearchQuery}
-                    onChange={(e) => setTenderSearchQuery(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const q = tenderSearchQuery.trim().toLowerCase()
-                        if (q.includes('toyota') || q.includes('isuzu') || q.includes('sedan') || q.includes('pickup') || q.includes('patrol')) {
-                          setVehicleSearchQuery(tenderSearchQuery)
-                          navigateTo('vehicles')
-                        } else {
-                          navigateTo('tenders')
-                        }
-                      }
-                    }}
-                    className="w-full pl-9 pr-3 py-2 text-xs text-[#16201B] placeholder:text-[#918C81] focus:outline-hidden"
-                  />
-                  {tenderSearchQuery && (
-                    <button
-                      onClick={() => setTenderSearchQuery('')}
-                      className="mr-2 text-[#6E695F] hover:text-[#16201B]"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  )}
-                </div>
+              <form
+                role="search"
+                className="w-full max-w-[720px] mt-2 bg-white border border-[#dfe6df] rounded-full shadow-[0_8px_28px_rgba(16,24,20,0.09)] flex items-center gap-3 pl-6 pr-2 py-2 text-left"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  const q = tenderSearchQuery.trim().toLowerCase()
+                  if (q.includes('toyota') || q.includes('isuzu') || q.includes('sedan') || q.includes('pickup') || q.includes('patrol')) {
+                    setVehicleSearchQuery(tenderSearchQuery)
+                    navigateTo('vehicles')
+                  } else {
+                    navigateTo('tenders')
+                  }
+                }}
+              >
+                <Search className="size-5 text-[#6E695F] shrink-0" />
+                <input
+                  type="search"
+                  aria-label="Search tenders and vehicles"
+                  placeholder="Search tenders and vehicles"
+                  value={tenderSearchQuery}
+                  onChange={(e) => setTenderSearchQuery(e.target.value)}
+                  className="flex-1 min-w-0 border-0 bg-transparent text-base text-[#16201B] placeholder:text-[#918C81] focus:outline-hidden min-h-[48px]"
+                />
                 <button
-                  onClick={() => {
-                    const q = tenderSearchQuery.trim().toLowerCase()
-                    if (q.includes('toyota') || q.includes('isuzu') || q.includes('sedan') || q.includes('pickup') || q.includes('patrol')) {
-                      setVehicleSearchQuery(tenderSearchQuery)
-                      navigateTo('vehicles')
-                    } else {
-                      navigateTo('tenders')
-                    }
-                  }}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-[#1B4332] text-white text-xs font-bold hover:bg-[#2D6A4F] transition shrink-0"
+                  type="submit"
+                  className="shrink-0 rounded-full bg-[#0b2f24] hover:bg-[#14503c] text-white font-bold text-base px-8 min-h-[52px] transition"
                 >
-                  Search Listings
+                  Search
                 </button>
-              </div>
+              </form>
 
-              {/* Sample Keyword Suggestion Pills */}
-              <div className="flex items-center gap-2 flex-wrap pt-1 text-xs">
-                <span className="text-[#D8F3DC]/80 text-[11px] font-medium">Sample Searches:</span>
+              <div className="flex flex-wrap items-center justify-center gap-2.5 mt-2" aria-label="Browse by category">
                 {[
-                  { label: 'School Desks', cat: 'Public Tenders', q: 'school desks' },
-                  { label: 'Hygiene Kits', cat: 'NGO Tenders', q: 'hygiene kits' },
-                  { label: 'Office Cleaning', cat: 'Private Tenders', q: 'office cleaning' },
-                  { label: 'Toyota Corolla', cat: 'Vehicle Bids', q: 'corolla' },
+                  { label: 'Public tenders', cat: 'Public Tenders' as const, icon: Building2, count: 4 },
+                  { label: 'NGO tenders', cat: 'NGO Tenders' as const, icon: Briefcase, count: 4 },
+                  { label: 'Private tenders', cat: 'Private Tenders' as const, icon: Building2, count: 4 },
+                  { label: 'Vehicle bids', cat: 'Vehicle Bids' as const, icon: Truck, count: 4 },
                 ].map((item) => (
                   <button
                     key={item.label}
-                    onClick={() => {
-                      setTenderSearchQuery(item.q)
-                      setSelectedHomeCategory(item.cat as any)
-                    }}
-                    className="px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] font-semibold text-[#D8F3DC] transition"
+                    type="button"
+                    onClick={() => setSelectedHomeCategory(item.cat)}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#dfe6df] bg-white px-4 py-2.5 text-sm font-semibold text-[#16201B] hover:shadow-md transition"
                   >
+                    <item.icon className="size-[18px] text-[#5f6b64]" />
                     {item.label}
+                    <em className="not-italic text-xs font-medium text-[#5f6b64]">{item.count}</em>
                   </button>
                 ))}
               </div>

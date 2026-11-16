@@ -494,6 +494,8 @@ export default function Shell({authUrl = '', authKey = ''}) {
           error={loadError}
           onSection={(key) => go('catalog', key)}
           onOpen={open}
+          q={filters.q}
+          setQ={setQ}
         />
       );
     }

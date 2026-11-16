@@ -144,7 +144,14 @@ function Empty({busy, error, children}) {
   </div>;
 }
 
-export function DeskHome({items, counts, busy, error, onSection, onOpen}) {
+export function DeskHome({items, counts, busy, error, onSection, onOpen, q = '', setQ}) {
+  const [draft, setDraft] = useState(q || '');
+  const submit = (event) => {
+    event.preventDefault();
+    const value = draft.trim();
+    if (!value || !setQ) return;
+    setQ(value);
+  };
   const vehicles = items.filter((item) => item.vehicle);
   const tenders = items.filter((item) => !item.vehicle);
   const soon = useMemo(() => [...items]
@@ -153,43 +160,43 @@ export function DeskHome({items, counts, busy, error, onSection, onOpen}) {
     .slice(0, 5), [items]);
   return <div className="dx-home">
     <div className="dx-hero">
-      <aside className="dx-cats" aria-label="Browse categories">
-        <h2>Categories</h2>
-        {sections.map(([key, label, icon]) => (
-          <button key={key} type="button" onClick={() => onSection(key)}>
-            <span className={'dx-cat-ico sector-' + key}><Icon name={icon || sectionIcons[key]} size={18} /></span>
-            <span>{label}</span>
-            <em>{counts[key] ?? 0}</em>
-            <b>›</b>
-          </button>
-        ))}
-      </aside>
       <section className="dx-banner">
-        <p className="dx-kicker">Ethiopia procurement directory</p>
-        <h1>Find a bid. Judge the lot.<br />Bid with the issuer.</h1>
-        <ol className="dx-steps">
-          <li><b>1</b> Search tenders &amp; vehicle lots</li>
-          <li><b>2</b> Check photos, condition &amp; closing</li>
-          <li><b>3</b> Follow the issuer’s instructions</li>
-        </ol>
-        <div className="dx-banner-cta">
-          <button type="button" className="dx-btn accent" onClick={() => onSection('vehicle')}><Icon name="car" size={18} /> Browse vehicles</button>
-          <button type="button" className="dx-btn ghost" onClick={() => onSection('public')}>Browse tenders</button>
+        <h1>Find your next bid</h1>
+        <p className="dx-hero-sub">Public, NGO and private tenders, plus vehicle lots, in one place.</p>
+        <form className="dx-herosearch" role="search" onSubmit={submit}>
+          <Icon name="search" size={22} />
+          <input
+            className="dx-herofield"
+            type="search"
+            aria-label="Search tenders and vehicles"
+            placeholder="Search tenders and vehicles"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+          />
+          <button type="submit" className="dx-herobtn">Search</button>
+        </form>
+        <div className="dx-herochips" aria-label="Browse by category">
+          {sections.map(([key, label, icon]) => (
+            <button key={key} type="button" onClick={() => onSection(key)}>
+              <Icon name={icon || sectionIcons[key]} size={18} /> {label} <em>{counts[key] ?? 0}</em>
+            </button>
+          ))}
         </div>
       </section>
-      <aside className="dx-soon" aria-label="Closing soon">
-        <h2><Icon name="clock" size={16} /> Closing soon</h2>
-        {soon.map((item) => (
-          <button key={item.id} type="button" onClick={() => onOpen(item.id)}>
-            <span className="dx-soon-thumb">
-              {item.cover ? <img src={'/api/photos/' + item.cover} alt="" /> : <Icon name={item.vehicle ? 'car' : 'doc'} size={18} />}
-            </span>
-            <span><strong>{cleanTitle(item.title)}</strong><Closing deadline={item.deadline} /></span>
-          </button>
-        ))}
-        {!soon.length && <p className="dx-muted">{busy ? 'Loading…' : 'No active lots yet.'}</p>}
-      </aside>
     </div>
+
+    <aside className="dx-soon" aria-label="Closing soon">
+      <h2><Icon name="clock" size={16} /> Closing soon</h2>
+      {soon.map((item) => (
+        <button key={item.id} type="button" onClick={() => onOpen(item.id)}>
+          <span className="dx-soon-thumb">
+            {item.cover ? <img src={'/api/photos/' + item.cover} alt="" /> : <Icon name={item.vehicle ? 'car' : 'doc'} size={18} />}
+          </span>
+          <span><strong>{cleanTitle(item.title)}</strong><Closing deadline={item.deadline} /></span>
+        </button>
+      ))}
+      {!soon.length && <p className="dx-muted">{busy ? 'Loading…' : 'No active lots yet.'}</p>}
+    </aside>
 
     {!!vehicles.length && <section className="dx-block">
       <div className="dx-block-head">
