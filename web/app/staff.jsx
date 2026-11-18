@@ -107,23 +107,24 @@ export default function Admin({api, onBack}) {
   return <section className="staff-console">
     <div className="staff-split">
       <div>
-        <p className="staff-eyebrow">Staff console · Fanos Tender only</p>
+        <p className="staff-eyebrow">Superadmin · Fanos Tender</p>
         <h1>Manage the directory</h1>
       </div>
       {onBack && <button type="button" className="staff-outline" onClick={onBack}>Back to site</button>}
     </div>
 
     <div className="staff-guide">
-      <strong>How publishing works</strong>
+      <strong>Single-owner publishing</strong>
       <ol>
-        <li>Staff only — issuers supply materials offline; they do not log into admin.</li>
+        <li>You are the Superadmin — issuers send notices/photos offline (Telegram, email); they do not log in here.</li>
         <li>Create a draft tender or vehicle lot from the official notice / authorized photos.</li>
         <li>Set status to Active (free or paid) when ready for the public directory.</li>
         <li>Verify bank payment references here after bidders submit them on the website.</li>
+        <li>When you hire help later, add their email as staff — do not share this login.</li>
       </ol>
     </div>
 
-    <div className="staff-tabs" role="tablist" aria-label="Staff sections">
+    <div className="staff-tabs" role="tablist" aria-label="Superadmin sections">
       {[
         ['listings', 'Listings'],
         ['review', 'Import review'],

@@ -5,7 +5,7 @@ import Brand from '../brand.jsx';
 import { useState } from 'react';
 import { Icon, sectionIcons } from '../stitch-ui.jsx';
 import { AccessBadge, ListingStack, Photo, VehicleRailCard } from './components.jsx';
-import { cleanTitle, conditionLabel, demoEmails, errorText, formatDeadline, sections, shortLabels, terms } from './utils.js';
+import { cleanTitle, conditionLabel, errorText, formatDeadline, sections, shortLabels, terms } from './utils.js';
 
 export function HomeScreen({q, setQ, items, busy, error, onSection, onOpen, onProfile}) {
   const vehicles = items.filter((item) => item.vehicle).slice(0, 4);
@@ -15,7 +15,6 @@ export function HomeScreen({q, setQ, items, busy, error, onSection, onOpen, onPr
       <div className="app-home-bar">
         <div className="page-head">
           <Brand />
-          <span className="badge demo">DEMO</span>
         </div>
         <button type="button" className="avatar-btn" onClick={onProfile} aria-label="Profile">
           <span className="avatar"><Icon name="user" size={20} /></span>
@@ -86,7 +85,7 @@ export function CatalogScreen({section, q, setQ, condition, setCondition, items,
   return <section className={'catalog is-catalog' + (section === 'vehicle' ? ' section-vehicle' : '')} data-section={section || 'all'}>
     <div className="list-topbar phone-only">
       <button type="button" className="icon-btn" onClick={onHome} aria-label="Back"><Icon name="back" size={22} /></button>
-      <div className="page-head"><h1>{title}</h1><span className="badge demo">DEMO</span></div>
+      <div className="page-head"><h1>{title}</h1></div>
       <button type="button" className="avatar-btn" onClick={onProfile} aria-label="Profile">
         <span className="avatar"><Icon name="user" size={18} /></span>
       </button>
@@ -94,7 +93,7 @@ export function CatalogScreen({section, q, setQ, condition, setCondition, items,
     <div className="desk-catalog-head desk-only">
       <div>
         <p className="eyebrow">Browse</p>
-        <div className="page-head"><h1>{title}</h1><span className="badge demo">DEMO</span></div>
+        <div className="page-head"><h1>{title}</h1></div>
       </div>
       <div className="desk-catalog-meta">
         <p>{countLabel}</p>
@@ -158,7 +157,6 @@ export function CatalogScreen({section, q, setQ, condition, setCondition, items,
       : error && !items.length ? <div className="empty" role="alert">{error}</div>
       : items.length ? <ListingStack items={items} onOpen={onOpen} />
       : <div className="empty">No active opportunities match these filters.</div>}
-    <div className="demo-foot"><p>Prototype environment — simulated feed</p></div>
   </section>;
 }
 
@@ -200,7 +198,6 @@ export function DetailScreen({item, api, me, saved, onBack, onSave, onSubscribe,
       {item.locked && <div className="locked-photo-tag"><Icon name="lock" size={14} /> Extra photos locked</div>}
     </div>}
     <div className="detail-facts">
-      <span className="badge demo">DEMO</span>
       <AccessBadge item={item} />
       {item.condition && <span className="badge">{conditionLabel(item.condition)}</span>}
       {info.lot && <span className="badge">Lot {info.lot}</span>}
@@ -277,7 +274,7 @@ export function ProfileScreen({me, language, onLanguage, onSignIn, onSignOut, on
   return <section className="stitch-profile">
     <div className="profile-head">
       <div>
-        <div className="page-head"><h1>Profile</h1><span className="badge demo">DEMO</span></div>
+        <div className="page-head"><h1>Profile</h1></div>
         <p>Procurement Directory</p>
       </div>
       <button type="button" className="icon-btn" onClick={onAlerts} aria-label="Alerts"><Icon name="bell" /></button>
@@ -289,35 +286,34 @@ export function ProfileScreen({me, language, onLanguage, onSignIn, onSignOut, on
           <div className="name-row">
             <strong>{me?.email || 'Guest User'}</strong>
             {!me && <span className="badge browse-only">Browse-Only</span>}
-            {me?.demo && <span className="badge demo">Local demo</span>}
-            {me?.admin && <span className="badge paid">Staff</span>}
-            {me?.subscribed && <span className="badge paid">Subscriber</span>}
+            {me?.admin && <span className="badge paid">Superadmin</span>}
+            {me?.subscribed && !me?.admin && <span className="badge paid">Subscriber</span>}
           </div>
           <p>{me
-            ? (me.demo
-              ? 'Local demo sign-in — browsing and local saves work; payment verification needs Supabase.'
+            ? (me.admin
+              ? 'Superadmin — post notices, manage photos, plans, and payment approvals.'
               : me.subscribed
-                ? 'Subscription active — paid listings unlocked'
-                : 'Signed in · free account. Subscribe to unlock paid bidding instructions.')
+              ? 'Subscription active — paid listings unlocked'
+              : 'Signed in · free account. Subscribe to unlock paid bidding instructions.')
             : 'Browse-only mode. Sign in to sync saved lots and submit a subscription payment reference.'}</p>
         </div>
       </div>
       <div className="stat-grid">
         <button type="button" className="stat" onClick={onSaved}>
-          <Icon name="bookmark" size={16} /><span>Saved Lots</span><strong>{me ? String(savedCount) : 'Local demo'}</strong>
+          <Icon name="bookmark" size={16} /><span>Saved Lots</span><strong>{me ? String(savedCount) : '—'}</strong>
         </button>
         <button type="button" className="stat" onClick={onPlans}>
           <Icon name="gavel" size={16} /><span>Subscription</span><strong>{me?.subscribed ? 'Active' : 'Locked'}</strong>
         </button>
         <button type="button" className="stat" onClick={onAlerts}>
-          <Icon name="bell" size={16} /><span>Alerts</span><strong>Local only</strong>
+          <Icon name="bell" size={16} /><span>Alerts</span><strong>{me ? 'On' : 'Sign in'}</strong>
         </button>
       </div>
       {!me && <button type="button" className="primary wide" onClick={onSignIn}>Sign in <Icon name="arrow" size={18} /></button>}
-      {me && !me.subscribed && <button type="button" className="primary wide" onClick={onPlans}>View subscriptions <Icon name="arrow" size={18} /></button>}
+      {me && !me.subscribed && !me.admin && <button type="button" className="primary wide" onClick={onPlans}>View subscriptions <Icon name="arrow" size={18} /></button>}
       {me?.admin && onStaff && (
         <button type="button" className="primary wide" onClick={onStaff}>
-          Open staff console <Icon name="arrow" size={18} />
+          Open Superadmin console <Icon name="arrow" size={18} />
         </button>
       )}
       {me && onSignOut && <button type="button" className="outline wide" onClick={onSignOut}>Sign out</button>}
@@ -343,18 +339,18 @@ export function ProfileScreen({me, language, onLanguage, onSignIn, onSignOut, on
       </div>
       <div className="pref-row">
         <div><Icon name="shield" size={18} /><div><strong>App Build</strong><small>Automotive procurement terminal.</small></div></div>
-        <span className="value-pill">v1.0.4-demo</span>
+        <span className="value-pill">v1.0.4</span>
       </div>
     </div>
     <div className="info-box">
       <Icon name="info" size={16} />
-      <p>Fanos Tender is an informational directory prototype. DEMO listings are labeled. Configure Supabase for real sign-in and payment references.</p>
+      <p>Fanos Tender is an informational directory. Configure Supabase for sign-in and payment references if they are not available yet.</p>
     </div>
   </section>;
 }
 
-export function AuthScreen({client, onBack, onDemoSignIn}) {
-  const [email, setEmail] = useState('demo@bidethiopia.et');
+export function AuthScreen({client, onBack}) {
+  const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
   const [message, setMessage] = useState('');
@@ -362,19 +358,7 @@ export function AuthScreen({client, onBack, onDemoSignIn}) {
 
   async function submit(event) {
     event.preventDefault();
-    if (!client) {
-      if (!sent) {
-        setSent(true);
-        setMessage('Demo mode: enter any 6-digit code to continue locally.');
-        return;
-      }
-      if (!/^\d{6}$/.test(code.trim())) {
-        setMessage('Enter a 6-digit demo code.');
-        return;
-      }
-      onDemoSignIn?.({email, subscribed: false});
-      return;
-    }
+    if (!client) return;
     setBusy(true);
     try {
       const {error} = sent
@@ -393,55 +377,57 @@ export function AuthScreen({client, onBack, onDemoSignIn}) {
   return <section className="stitch-auth">
     <div className="stitch-subnav">
       <button type="button" className="text-back" onClick={onBack}><Icon name="back" size={18} /> Back to Profile</button>
-      <span className="sandbox-pill"><span className="dot" /> Sandbox Environment</span>
     </div>
     <div className="auth-hero">
       <div className="auth-gavel"><Icon name="gavel" size={28} /></div>
       <h1>Sign in to Fanos Tender</h1>
       <p>Access official tenders, saved motor auctions, verified bank deposits, and critical closing alerts across your field devices.</p>
     </div>
-    <div className="auth-notice">
-      <Icon name="info" size={18} />
-      <div>
-        <strong>Interactive Prototype Notice</strong>
-        <p>Demo Mode active. No real email or SMS is dispatched. Enter any valid demo email address and authenticate instantly using the simulated clearance code.</p>
-      </div>
-    </div>
-    <form className="auth-card" onSubmit={submit}>
-      <div className="auth-steps" aria-hidden="true">
-        <span className={'step' + (!sent ? ' on' : '')}><i>1</i>Tenderer Email</span>
-        <span className="step-line" />
-        <span className={'step' + (sent ? ' on' : '')}><i>2</i>Code Clearance</span>
-      </div>
-      {!sent ? <>
-        <div className="field-head"><label htmlFor="proc-email">Official Procurement Email</label><span>Field Account</span></div>
-        <div className="mail-input">
-          <Icon name="mail" size={18} />
-          <input id="proc-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="demo@bidethiopia.et" />
+    {!client ? (
+      <div className="auth-notice" role="status">
+        <Icon name="info" size={18} />
+        <div>
+          <strong>Sign-in is not configured</strong>
+          <p>Supabase auth is not available on this deployment. Configure auth URL and key to enable email one-time codes.</p>
         </div>
-        <p className="field-hint">We will issue a one-time 6-digit access token for registered Ethiopian bidders.</p>
-        <div className="fast-fill">
-          {demoEmails.map((item) => <button type="button" key={item} onClick={() => setEmail(item)}>{item}</button>)}
+      </div>
+    ) : (
+      <form className="auth-card" onSubmit={submit}>
+        <div className="auth-steps" aria-hidden="true">
+          <span className={'step' + (!sent ? ' on' : '')}><i>1</i>Tenderer Email</span>
+          <span className="step-line" />
+          <span className={'step' + (sent ? ' on' : '')}><i>2</i>Code Clearance</span>
         </div>
-        <button className="primary wide" disabled={busy}>Send Code <Icon name="arrow" size={18} /></button>
-      </> : <>
-        <label htmlFor="otp-code">Code Clearance
-          <input id="otp-code" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={(e) => setCode(e.target.value)} />
-        </label>
-        <button className="primary wide" disabled={busy}>Verify Code</button>
-        <button type="button" className="ghost" onClick={() => {setSent(false); setMessage('');}}>Tenderer Email</button>
-      </>}
-      {message && <p role="status">{message}</p>}
-    </form>
+        {!sent ? <>
+          <div className="field-head"><label htmlFor="proc-email">Official Procurement Email</label><span>Field Account</span></div>
+          <div className="mail-input">
+            <Icon name="mail" size={18} />
+            <input id="proc-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@organization.et" />
+          </div>
+          <p className="field-hint">We will issue a one-time 6-digit access token for registered Ethiopian bidders.</p>
+          <button className="primary wide" disabled={busy}>Send Code <Icon name="arrow" size={18} /></button>
+        </> : <>
+          <label htmlFor="otp-code">Code Clearance
+            <input id="otp-code" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={(e) => setCode(e.target.value)} />
+          </label>
+          <button className="primary wide" disabled={busy}>Verify Code</button>
+          <button type="button" className="ghost" onClick={() => {setSent(false); setMessage('');}}>Tenderer Email</button>
+        </>}
+        {message && <p role="status">{message}</p>}
+      </form>
+    )}
     <div className="trust-row">
       <span><Icon name="lock" size={14} /> End-to-End Encrypted</span>
       <span><Icon name="shield" size={14} /> Federal Gazette Compliant</span>
     </div>
-    <p className="legal-note">Protected under the Commercial Registration and Business Licensing Proclamation. Bids submitted via verified accounts carry legal obligation.</p>
+    <p className="legal-note">
+      By continuing you agree to the <a href="/terms">Terms of Use</a> and <a href="/privacy">Privacy Policy</a>.
+      Bid with the issuer — not on this site.
+    </p>
   </section>;
 }
 
-export function SavedScreen({items, onOpen, onRestore, guest = true}) {
+export function SavedScreen({items, onOpen, onSignIn, guest = true}) {
   const [filter, setFilter] = useState('all');
   const vehicles = items.filter((item) => item.vehicle);
   const procurement = items.filter((item) => !item.vehicle);
@@ -449,8 +435,8 @@ export function SavedScreen({items, onOpen, onRestore, guest = true}) {
 
   return <section className="stitch-saved">
     <div className="saved-status">
-      <strong>{items.length} {guest ? 'Demo items saved' : 'Saved lots'}</strong>
-      <span className={'badge ' + (guest ? 'browse-only' : 'mint')}>{guest ? 'Local only' : 'Synced'}</span>
+      <strong>{items.length} Saved lots</strong>
+      <span className={'badge ' + (guest ? 'browse-only' : 'mint')}>{guest ? 'Sign in to sync' : 'Synced'}</span>
     </div>
     <div className="chip-row">
       <button type="button" className={filter === 'all' ? 'chip on' : 'chip'} onClick={() => setFilter('all')}>All Items ({items.length})</button>
@@ -488,65 +474,75 @@ export function SavedScreen({items, onOpen, onRestore, guest = true}) {
           <button type="button" className="primary wide" onClick={() => onOpen(item.id)}>View Tender →</button>
         </article>
       ))}
-      {!shown.length && <div className="empty">No saved opportunities yet.</div>}
+      {!shown.length && <div className="empty">
+        <p>No saved opportunities yet.</p>
+        {guest && onSignIn && <button type="button" className="primary" onClick={onSignIn}>Sign in to save lots</button>}
+      </div>}
     </div>
-    {guest && (
-      <div className="demo-foot">
-        <p>Guest preview — these lots stay on this device until you sign in.</p>
-        <button type="button" className="link" onClick={onRestore}>Restore demo saved items</button>
+    {guest && !!shown.length && (
+      <div className="info-box">
+        <Icon name="info" size={16} />
+        <p>Sign in to keep saved lots synced across your devices.</p>
       </div>
     )}
   </section>;
 }
 
-export function AlertsScreen({items, onOpen, onHome}) {
+export function AlertsScreen({me, items, onOpen, onHome, onSignIn}) {
   const vehicle = items.find((item) => item.vehicle) || items[0];
   const tender = items.find((item) => !item.vehicle) || items[1];
   return <section className="stitch-alerts">
     <div className="alerts-toolbar">
-      <span className="sandbox-pill"><span className="dot" /> Simulated Tender Updates</span>
-      <button type="button" className="text-back" disabled title="Demo alerts are static">Mark all read</button>
+      <span className="value-pill">{me ? 'Your alerts' : 'Alerts'}</span>
+      <button type="button" className="text-back" disabled title="Mark all read coming soon">Mark all read</button>
     </div>
-    <div className="alert-stack">
-      {vehicle && <article className="alert-card urgent">
-        <div className="alert-ico warn"><Icon name="clock" size={18} /></div>
-        <div>
-          <div className="alert-top"><span className="badge warn-badge">Urgent Deadline</span><small>2 hours ago · EAT</small></div>
-          <h3>Closing Soon: {cleanTitle(vehicle.title)}</h3>
-          <p>Bidding closes soon at {formatDeadline(vehicle.deadline)} EAT{vehicle.details?.lot ? ` (Lot #${vehicle.details.lot})` : ''}.</p>
-          <div className="alert-action">
-            <div><Icon name="car" size={16} /><span>{vehicle.issuer}</span></div>
-            <button type="button" className="primary" onClick={() => onOpen(vehicle.id)}>Review Bid</button>
+    {!me ? (
+      <div className="empty" role="status">
+        <strong>Sign in for closing alerts</strong>
+        <p>Real tender updates and deadline reminders will appear here when you are signed in. Push notifications are coming soon.</p>
+        {onSignIn && <button type="button" className="primary" onClick={onSignIn}>Sign in</button>}
+      </div>
+    ) : (
+      <div className="alert-stack">
+        {vehicle && <article className="alert-card urgent">
+          <div className="alert-ico warn"><Icon name="clock" size={18} /></div>
+          <div>
+            <div className="alert-top"><span className="badge warn-badge">Urgent Deadline</span><small>Closing · EAT</small></div>
+            <h3>Closing Soon: {cleanTitle(vehicle.title)}</h3>
+            <p>Bidding closes at {formatDeadline(vehicle.deadline)} EAT{vehicle.details?.lot ? ` (Lot #${vehicle.details.lot})` : ''}.</p>
+            <div className="alert-action">
+              <div><Icon name="car" size={16} /><span>{vehicle.issuer}</span></div>
+              <button type="button" className="primary" onClick={() => onOpen(vehicle.id)}>Review Bid</button>
+            </div>
           </div>
-        </div>
-      </article>}
-      {tender && <article className="alert-card update">
-        <div className="alert-ico mint"><Icon name="doc" size={18} /></div>
-        <div>
-          <div className="alert-top"><span className="badge mint">Tender Update</span><small>Yesterday · EAT</small></div>
-          <h3>Specification Clarification: {cleanTitle(tender.title)}</h3>
-          <p>{tender.issuer} posted an updated notice addendum.</p>
-          <div className="alert-action file">
-            <Icon name="doc" size={16} />
-            <span>{tender.details?.reference || 'Addendum'}</span>
-            <Icon name="download" size={16} />
+        </article>}
+        {tender && <article className="alert-card update">
+          <div className="alert-ico mint"><Icon name="doc" size={18} /></div>
+          <div>
+            <div className="alert-top"><span className="badge mint">Tender Update</span><small>Open notice · EAT</small></div>
+            <h3>Open opportunity: {cleanTitle(tender.title)}</h3>
+            <p>{tender.issuer} — closing {formatDeadline(tender.deadline)} EAT.</p>
+            <div className="alert-action file">
+              <Icon name="doc" size={16} />
+              <span>{tender.details?.reference || 'Notice'}</span>
+              <Icon name="download" size={16} />
+            </div>
           </div>
-        </div>
-      </article>}
-      {tender && <article className="alert-card new">
-        <div className="alert-ico gray"><Icon name="bookmark" size={18} /></div>
-        <div>
-          <div className="alert-top"><span className="badge">New Listing</span><small>3 days ago</small></div>
-          <h3>New {tender.sector} opportunity</h3>
-          <p>New opportunity matching your saved preferences: {cleanTitle(tender.title)} closing {formatDeadline(tender.deadline)}.</p>
-          <div className="tag-row"><span>#{tender.sector}</span><span>#Procurement</span><span>#Ethiopia</span></div>
-        </div>
-      </article>}
-    </div>
+        </article>}
+        {!vehicle && !tender && (
+          <div className="empty" role="status">
+            <strong>No alerts yet</strong>
+            <p>Closing reminders and tender updates will show here as listings change. Push notifications are coming soon.</p>
+          </div>
+        )}
+      </div>
+    )}
     <button type="button" className="primary wide" onClick={onHome}><Icon name="back" size={16} /> Return to Tender Dashboard</button>
     <div className="info-box">
       <Icon name="shield" size={16} />
-      <p>Ethiopian procurement sandbox. Demo alerts simulated for prototype preview. Notifications reflect fictional Ethiopian procurement postings.</p>
+      <p>{me
+        ? 'Alerts reflect open listings on your account. Personalized push notifications are coming soon.'
+        : 'Sign in to receive closing alerts for Ethiopian procurement and vehicle bids.'}</p>
     </div>
   </section>;
 }
@@ -624,7 +620,7 @@ export function PlansScreen({me, plans, plansError, payments, term, setTerm, ref
   const monthlyPrice = Number(visiblePlans.find((plan) => plan.months === 1)?.price);
   return <section className="stitch-plans">
     <button type="button" className="text-back" onClick={onBack}><Icon name="back" size={18} /> Back</button>
-    <div className="page-head"><h1 className="serif">Subscriptions</h1><span className="badge demo">DEMO</span></div>
+    <div className="page-head"><h1 className="serif">Subscriptions</h1></div>
     <p className="plans-lead">Unlock paid tenders and vehicle bidding instructions. Purchase stays on the website — the iOS and Android apps use the same account after sign-in.</p>
     {me?.subscribed && (
       <div className="verify-banner">
@@ -656,7 +652,7 @@ export function PlansScreen({me, plans, plansError, payments, term, setTerm, ref
         ? <div className="notice-text pay-instructions"><h3>Payment instructions</h3><p>{plans.instructions}</p></div>
         : <div className="empty">Payment instructions are not configured yet.</div>}
     </> : !plansError && <p role="status">Loading plans…</p>}
-    {me && !me.demo ? (
+    {me ? (
       <form className="stack" onSubmit={onSubmit}>
         <label>Transaction reference
           <input value={reference} onChange={(event) => setReference(event.target.value)} required placeholder="Bank deposit reference" />
@@ -665,8 +661,6 @@ export function PlansScreen({me, plans, plansError, payments, term, setTerm, ref
           Submit for verification
         </button>
       </form>
-    ) : me?.demo ? (
-      <div className="empty" role="status">Demo sign-in cannot submit payments. Configure Supabase for real verification, or continue browsing plans.</div>
     ) : (
       <button type="button" className="primary wide" onClick={onAuth}>Sign in to submit a reference</button>
     )}

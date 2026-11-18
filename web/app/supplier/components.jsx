@@ -127,9 +127,6 @@ export function DeskNav({
     <div className="desk-nav-inner">
       <button type="button" className="desk-brand" onClick={onHome}>
         <Brand />
-        <span>
-          <span className="badge demo">DEMO</span>
-        </span>
       </button>
       <div className="desk-search">
         <Icon name="search" size={18} />
@@ -174,9 +171,6 @@ export function SiteFooter({
     <div className="site-footer-inner site-footer-slim">
       <button type="button" className="site-footer-logo" onClick={onHome}>
         <Brand />
-        <span>
-          <span className="badge demo">DEMO</span>
-        </span>
       </button>
       <nav className="site-footer-links" aria-label="Footer">
         {sections.map(([key, label]) => (
@@ -185,6 +179,8 @@ export function SiteFooter({
         <button type="button" onClick={onSaved}>Saved</button>
         <button type="button" onClick={onPlans}>Subscriptions</button>
         <button type="button" onClick={me ? onProfile : onSignIn}>{me ? 'Account' : 'Sign in'}</button>
+        <a href="/terms">Terms</a>
+        <a href="/privacy">Privacy</a>
       </nav>
     </div>
     <div className="site-footer-bar">

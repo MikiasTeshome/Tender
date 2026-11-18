@@ -11,14 +11,30 @@ Notifications.setNotificationHandler({
 });
 
 const base = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/,'') ?? '';
+const webBase = (process.env.EXPO_PUBLIC_WEB_URL || process.env.EXPO_PUBLIC_API_URL || '').replace(/\/$/,'');
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const PUSH_TOKEN_KEY = 'fanos.pushToken';
 const auth = supabaseUrl && supabaseKey ? createClient(supabaseUrl,supabaseKey,{
   auth:{
     storage:{getItem:SecureStore.getItemAsync,setItem:SecureStore.setItemAsync,removeItem:SecureStore.deleteItemAsync},
     persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,lock:processLock,
   },
 }).auth : null;
+
+async function resolveExpoPushToken() {
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default',{
+      name:'Fanos Tender alerts',importance:Notifications.AndroidImportance.DEFAULT,
+    });
+  }
+  const {status:permission} = await Notifications.requestPermissionsAsync();
+  if (permission !== 'granted') throw new Error('Allow notifications in your device settings.');
+  const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
+  if (!projectId) throw new Error('Android notifications are being configured.');
+  // Expo push token; Android delivery uses FCM via google-services.json (not Firebase Auth).
+  return (await Notifications.getExpoPushTokenAsync({projectId})).data;
+}
 
 const sections = [['public','Public Tenders','▤'],['ngo','NGO Tenders','◎'],['private','Private Tenders','▦'],['vehicle','Vehicle Bids','▰']];
 const defaults = {section:'',q:'',region:'',access:'',deadline:'',condition:'',make:'',model:''};
@@ -136,6 +152,22 @@ export default function App() {
     const subscription = Notifications.addNotificationResponseReceivedListener(follow);
     return () => subscription.remove();
   },[]);
+  useEffect(() => {
+    if (!token || !account?.pushEnabled) return;
+    let alive = true;
+    (async () => {
+      try {
+        const pushToken = await resolveExpoPushToken();
+        const cached = await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
+        if (!alive || !pushToken || pushToken === cached) return;
+        await api('preferences',{method:'PUT',data:{pushToken}});
+        await SecureStore.setItemAsync(PUSH_TOKEN_KEY,pushToken);
+      } catch {
+        // Keep browsing if push re-registration fails; account toggle surfaces errors.
+      }
+    })();
+    return () => {alive = false;};
+  },[account?.pushEnabled,api,token]);
   const home = !directory && !filters.q;
   const currentSection = home ? homeCategory : filters.section;
   useEffect(() => {
@@ -167,15 +199,12 @@ export default function App() {
   async function updatePush(enabled) {
     let pushToken = null;
     if (enabled) {
-      if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('default',{name:'Tender alerts',importance:Notifications.AndroidImportance.DEFAULT});
-      }
-      const {status:permission} = await Notifications.requestPermissionsAsync();
-      if (permission !== 'granted') throw new Error('Allow notifications in your device settings.');
-      const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
-      if (!projectId) throw new Error('Android notifications are being configured.');
-      pushToken = (await Notifications.getExpoPushTokenAsync({projectId})).data;
+      pushToken = await resolveExpoPushToken();
+      await SecureStore.setItemAsync(PUSH_TOKEN_KEY,pushToken);
+    } else {
+      await SecureStore.deleteItemAsync(PUSH_TOKEN_KEY);
     }
+    // Backend: PUT /api/preferences { pushToken } stores Expo push token (FCM under the hood on Android).
     await api('preferences',{method:'PUT',data:{pushToken}});
     await refresh();
   }
@@ -204,23 +233,51 @@ export default function App() {
       </View>}
       {view === 'alerts' && <View style={styles.gap}>
         <Text accessibilityRole="header" style={styles.heading}>Alerts</Text>
-        <Text style={styles.body}>{account ? 'Manage alerts for your saved searches.' : 'Sign in to set up tender and vehicle alerts.'}</Text>
-        <Button label={account ? 'Manage alerts' : 'Sign in'} active onPress={() => go(account ? 'account' : 'signIn')} />
+        {!account ? <>
+          <Text style={styles.body}>Sign in to manage email and Android push alerts for your saved searches.</Text>
+          <Button label="Sign in" active onPress={() => go('signIn')} />
+        </> : <>
+          <Text style={styles.body}>Alerts follow your saved searches. Enable Android push to get matching updates on this device.</Text>
+          <View style={styles.toggle}><Text style={styles.body}>Email alerts</Text><Switch accessibilityLabel="Email alerts" value={account.emailAlerts} onValueChange={(emailAlerts) => run(async () => {
+            await api('preferences',{method:'PUT',data:{emailAlerts}});await refresh();
+          })} /></View>
+          <View style={styles.toggle}><Text style={styles.body}>Android push alerts</Text><Switch accessibilityLabel="Android push alerts" value={account.pushEnabled} onValueChange={(enabled) => run(() => updatePush(enabled))} /></View>
+          <Text style={styles.heading}>Saved searches</Text>
+          {searches.map((search) => <View key={search.id} style={styles.row}>
+            <Button label={search.label} onPress={() => {setDirectory(true);setFilters({...defaults,...search.filters});go('browse');}} />
+            <Button label="Remove" onPress={() => run(async () => {await api('searches/' + search.id,{method:'DELETE'});await refresh();})} />
+          </View>)}
+          {!searches.length && <Text style={styles.body}>No saved searches yet. Save a search from browse to get matching alerts.</Text>}
+          <Text style={styles.heading}>Saved opportunities</Text>
+          {saved.length ? <Cards items={saved} open={open} /> : <Text style={styles.body}>No saved opportunities yet.</Text>}
+          <Button label="Open profile" onPress={() => go('account')} />
+        </>}
       </View>}
       {view === 'signIn' && <View style={styles.gap}>
         <Text style={styles.heading}>Sign in with email</Text>
+        <Text style={styles.body}>We email a one-time sign-in code to your address.</Text>
         <TextInput style={styles.input} placeholder="Email address" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" editable={!sent} />
-        {sent && <TextInput style={styles.input} placeholder="Sign-in code" value={code} onChangeText={setCode} keyboardType="numeric" />}
+        {sent && <TextInput style={styles.input} placeholder="Sign-in code" value={code} onChangeText={setCode} keyboardType="numeric" autoComplete="one-time-code" textContentType="oneTimeCode" />}
+        <Text style={styles.body}>By continuing you agree to the Terms of Use and Privacy Policy.</Text>
+        {!!webBase && <View style={styles.row}>
+          <Button label="Terms" onPress={() => Linking.openURL(webBase + '/terms')} />
+          <Button label="Privacy" onPress={() => Linking.openURL(webBase + '/privacy')} />
+        </View>}
         <Button label={sent ? 'Verify code' : 'Send sign-in code'} active onPress={() => run(async () => {
-          if (!auth) throw new Error('Email sign-in is being configured.');
-          const {error} = sent ? await auth.verifyOtp({email,token:code,type:'email'}) : await auth.signInWithOtp({email});
+          if (!auth) throw new Error('Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY for email sign-in.');
+          const trimmed = email.trim();
+          if (!trimmed) throw new Error('Enter your email address.');
+          if (sent && !code.trim()) throw new Error('Enter the sign-in code from your email.');
+          const {error} = sent
+            ? await auth.verifyOtp({email:trimmed,token:code.trim(),type:'email'})
+            : await auth.signInWithOtp({email:trimmed});
           if (error) throw error;
-          if (!sent) {setSent(true);setStatus('Check your email for your sign-in code.');}
+          if (!sent) {setEmail(trimmed);setSent(true);setStatus('Check your email for your sign-in code.');}
         })} />
         {sent && <Button label="Use another email" onPress={() => {setSent(false);setCode('');setStatus('');}} />}
       </View>}
       {view === 'account' && account && <View style={styles.gap}>
-        <Text style={styles.heading}>My account</Text><Text style={styles.body}>{account.email}</Text>
+        <Text style={styles.heading}>Profile</Text><Text style={styles.body}>{account.email}</Text>
         <Text style={styles.body}>{account.subscribed ? 'Subscription active until ' + date(account.expiresAt) : 'Free account'}</Text>
         <View style={styles.toggle}><Text style={styles.body}>Email alerts</Text><Switch accessibilityLabel="Email alerts" value={account.emailAlerts} onValueChange={(emailAlerts) => run(async () => {
           await api('preferences',{method:'PUT',data:{emailAlerts}});await refresh();
@@ -233,7 +290,11 @@ export default function App() {
         {!searches.length && <Text style={styles.body}>No saved searches yet.</Text>}
         <Text style={styles.heading}>Saved opportunities</Text><Cards items={saved} open={open} />
         {!saved.length && <Text style={styles.body}>No saved opportunities yet.</Text>}
-        <Button label="Sign out" onPress={() => run(async () => {await auth.signOut();setSent(false);setCode('');go('browse');})} />
+        <Button label="Sign out" onPress={() => run(async () => {
+          await auth.signOut();
+          await SecureStore.deleteItemAsync(PUSH_TOKEN_KEY).catch(() => {});
+          setSent(false);setCode('');setEmail('');go('browse');
+        })} />
       </View>}
       {view === 'detail' && !item && !status && <Text style={styles.body}>Loading opportunity…</Text>}
       {view === 'detail' && item && <View style={styles.gap}>

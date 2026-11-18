@@ -8,7 +8,6 @@ export const sections = [
 ];
 
 export const terms = {1: 'Monthly', 3: 'Quarterly', 6: 'Half-year', 12: 'Annual'};
-export const demoEmails = ['procurement@addis-transport.et', 'bidder@sample.et'];
 
 const deadlineFmt = new Intl.DateTimeFormat('en-ET', {
   timeZone: 'Africa/Addis_Ababa',

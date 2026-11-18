@@ -58,7 +58,7 @@ export function DeskHeader({
           <button type="button" className={screen === 'plans' ? 'on' : ''} onClick={onPlans}>
             <Icon name="gavel" size={18} /> Plans
           </button>
-          {me?.admin && <button type="button" className={screen === 'staff' ? 'on' : ''} onClick={onStaff}>Staff</button>}
+          {me?.admin && <button type="button" className={screen === 'staff' ? 'on' : ''} onClick={onStaff}>Superadmin</button>}
           <span className="dx-lang" role="group" aria-label="Language">
             <button type="button" aria-pressed={language === 'en'} onClick={() => onLanguage('en')}>EN</button>
             <button type="button" aria-pressed={language === 'am'} disabled title="Amharic coming soon">አማ</button>
@@ -315,20 +315,20 @@ export function DeskCatalog({
   </div>;
 }
 
-export function DeskSaved({items, guest, onOpen, onRestore, onHome}) {
+export function DeskSaved({items, guest, onOpen, onHome, onSignIn}) {
   const vehicles = items.filter((item) => item.vehicle);
   const tenders = items.filter((item) => !item.vehicle);
   return <div className="dx-saved">
     <div className="dx-results-head">
       <div>
         <h1>Saved lots</h1>
-        <p>{items.length} saved · {guest ? 'on this device only' : 'synced to your account'}</p>
+        <p>{items.length} saved · {guest ? 'sign in to sync' : 'synced to your account'}</p>
       </div>
       <button type="button" className="dx-btn ghost dark" onClick={onHome}>Keep browsing</button>
     </div>
     {!items.length && <div className="dx-empty">
       <strong>No saved lots yet</strong>
-      {guest && <button type="button" className="dx-link" onClick={onRestore}>Restore demo saved items</button>}
+      {guest && onSignIn && <button type="button" className="dx-link" onClick={onSignIn}>Sign in to save lots</button>}
     </div>}
     {!!vehicles.length && <div className="dx-grid dx-grid-4">
       {vehicles.map((item) => <VehicleCard key={item.id} item={item} onOpen={onOpen} />)}
@@ -406,7 +406,6 @@ export function DeskDetail({item, api, me, saved, section, onBack, onSave, onSub
             <Access item={item} />
             {item.condition && <span className="dx-pill">{conditionLabel(item.condition)}</span>}
             {info.lot && <span className="dx-pill">Lot {info.lot}</span>}
-            <span className="dx-pill demo">DEMO</span>
           </div>
           <h1>{cleanTitle(item.title)}</h1>
           <p className="dx-meta"><Icon name="building" size={14} /> {item.issuer}{item.region ? ` · ${item.region}` : ''}</p>

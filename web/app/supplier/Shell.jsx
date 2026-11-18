@@ -25,14 +25,12 @@ export default function Shell({authUrl = '', authKey = ''}) {
   const client = useMemo(() => (authUrl && authKey ? createClient(authUrl, authKey) : null), [authUrl, authKey]);
   const [session, setSession] = useState(null);
   const [me, setMe] = useState(null);
-  const [demoMe, setDemoMe] = useState(null);
   const [route, setRoute] = useState({bid: '', screen: 'home', section: ''});
   const [filters, setFilters] = useState(emptyFilters);
   const [catalog, setCatalog] = useState({items: []});
   const [detail, setDetail] = useState(null);
   const [detailError, setDetailError] = useState('');
   const [saved, setSaved] = useState([]);
-  const [demoSaved, setDemoSaved] = useState([]);
   const [plans, setPlans] = useState(null);
   const [plansError, setPlansError] = useState('');
   const [payments, setPayments] = useState([]);
@@ -46,7 +44,7 @@ export default function Shell({authUrl = '', authKey = ''}) {
   const mode = useViewportMode();
 
   const accessToken = session?.access_token;
-  const account = me || demoMe;
+  const account = me;
   const api = useCallback(async (path, options = {}) => {
     const {data, binary, ...init} = options;
     const headers = new Headers(init.headers);
@@ -71,7 +69,6 @@ export default function Shell({authUrl = '', authKey = ''}) {
     const [accountData, list] = await Promise.all([api('me'), api('saved')]);
     setMe(accountData);
     setSaved(list);
-    setDemoMe(null);
   }, [api, accessToken]);
 
   useEffect(() => {
@@ -129,13 +126,6 @@ export default function Shell({authUrl = '', authKey = ''}) {
         if (!alive) return;
         setCatalog(result);
         setLoadError('');
-        setDemoSaved((prev) => {
-          if (prev.length || !result.items?.length) return prev;
-          return [
-            result.items.find((item) => item.vehicle),
-            result.items.find((item) => !item.vehicle),
-          ].filter(Boolean);
-        });
       } catch (error) {
         if (!alive || error.name === 'AbortError') return;
         setLoadError(errorText(error));
@@ -280,32 +270,15 @@ export default function Shell({authUrl = '', authKey = ''}) {
     window.localStorage.setItem('bid-lang', next);
   }
 
-  function handleDemoSignIn({email}) {
-    setDemoMe({email, subscribed: false, demo: true});
-    setStatus('');
-    go('profile');
-  }
-
   async function handleSignOut() {
     setStatus('');
     if (client && accessToken) {
       await client.auth.signOut();
     }
-    setDemoMe(null);
     setMe(null);
     setSaved([]);
     setPayments([]);
     go('home');
-  }
-
-  function toggleDemoSave(id) {
-    setDemoSaved((prev) => {
-      if (prev.some((entry) => entry.id === id)) return prev.filter((entry) => entry.id !== id);
-      const fromCatalog = catalog.items.find((entry) => entry.id === id);
-      const fromDetail = detail?.id === id ? detail : null;
-      const next = fromCatalog || fromDetail;
-      return next ? [next, ...prev] : prev;
-    });
   }
 
   useEffect(() => {
@@ -314,9 +287,9 @@ export default function Shell({authUrl = '', authKey = ''}) {
 
   useEffect(() => {
     if (route.screen !== 'staff') return;
-    if (accessToken && !account && !demoMe) return;
+    if (accessToken && !account) return;
     if (!account?.admin) go(account ? 'profile' : 'auth');
-  }, [route.screen, account, accessToken, demoMe]);
+  }, [route.screen, account, accessToken]);
 
   const shown = catalog.items.filter((item) => {
     if (filters.section === 'vehicle') {
@@ -327,11 +300,9 @@ export default function Shell({authUrl = '', authKey = ''}) {
     return true;
   });
   const homeItems = catalog.items;
-  const savedItems = me ? saved : demoSaved;
-  const savedCount = me ? saved.length : demoSaved.length;
-  const savedCurrent = me
-    ? saved.some((entry) => entry.id === route.bid)
-    : demoSaved.some((entry) => entry.id === route.bid);
+  const savedItems = saved;
+  const savedCount = saved.length;
+  const savedCurrent = saved.some((entry) => entry.id === route.bid);
   const screen = route.bid ? 'detail' : route.screen;
   const staffAllowed = !!account?.admin;
   const counts = useMemo(() => countListings(allItems), [allItems]);
@@ -347,19 +318,15 @@ export default function Shell({authUrl = '', authKey = ''}) {
       });
       return;
     }
-    if (demoMe) {
-      toggleDemoSave(route.bid);
-      return;
-    }
     go('auth');
   }
 
   const sharedScreen = screen === 'auth' ? (
-    <AuthScreen client={client} onBack={() => go('profile')} onDemoSignIn={handleDemoSignIn} />
+    <AuthScreen client={client} onBack={() => go('profile')} />
   ) : screen === 'staff' ? (
     staffAllowed
       ? <Admin api={api} onBack={() => go('profile')} />
-      : <p role="status">Checking staff access…</p>
+      : <p role="status">Checking Superadmin access…</p>
   ) : screen === 'profile' ? (
     <ProfileScreen
       me={account}
@@ -388,9 +355,7 @@ export default function Shell({authUrl = '', authKey = ''}) {
       onSubmit={(event) => {
         event.preventDefault();
         if (!accessToken) {
-          setStatus(demoMe
-            ? 'Demo sign-in cannot submit payments. Configure Supabase for real verification.'
-            : 'Sign in to submit a payment reference.');
+          setStatus('Sign in to submit a payment reference.');
           return;
         }
         void run(async () => {
@@ -402,7 +367,7 @@ export default function Shell({authUrl = '', authKey = ''}) {
       }}
     />
   ) : screen === 'alerts' ? (
-    <AlertsScreen items={catalog.items} onOpen={open} onHome={() => go('home')} />
+    <AlertsScreen me={account} items={catalog.items} onOpen={open} onHome={() => go('home')} onSignIn={() => go('auth')} />
   ) : null;
 
   const statusBar = status && (
@@ -465,8 +430,8 @@ export default function Shell({authUrl = '', authKey = ''}) {
           items={savedItems}
           guest={!me}
           onOpen={open}
-          onRestore={() => setDemoSaved(catalog.items.slice(0, 2))}
           onHome={() => go('home')}
+          onSignIn={() => go('auth')}
         />
       );
     } else if (screen === 'catalog') {
@@ -555,7 +520,7 @@ export default function Shell({authUrl = '', authKey = ''}) {
             items={savedItems}
             guest={!me}
             onOpen={open}
-            onRestore={() => setDemoSaved(catalog.items.slice(0, 2))}
+            onSignIn={() => go('auth')}
           />
         ) : screen === 'catalog' ? (
           <CatalogScreen
@@ -602,4 +567,3 @@ export default function Shell({authUrl = '', authKey = ''}) {
     )}
   </div>;
 }
-

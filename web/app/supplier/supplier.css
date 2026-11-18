@@ -89,11 +89,14 @@
 .site-footer-links {
   display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;
 }
-.site-footer-links button {
+.site-footer-links button,
+.site-footer-links a {
   border: 0; background: transparent; padding: 0;
   color: #d7e4dc; font-weight: 600; font-size: .9rem;
+  text-decoration: none;
 }
-.site-footer-links button:hover { color: #fff; }
+.site-footer-links button:hover,
+.site-footer-links a:hover { color: #fff; }
 .site-footer-bar {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
@@ -554,6 +557,7 @@
 }
 .trust-row span { display: inline-flex; align-items: center; gap: 6px; }
 .legal-note { margin: 0; text-align: center; font-size: .75rem; color: var(--muted); }
+.legal-note a { color: var(--green); font-weight: 700; }
 .auth-card label { display: grid; gap: 6px; font-size: .88rem; font-weight: 700; }
 .auth-card input[type="text"], .auth-card input[type="email"], .auth-card input:not([type]) {
   min-height: 42px; padding: 9px 10px; border: 1px solid #abbdb3; border-radius: 8px; background: #fff;

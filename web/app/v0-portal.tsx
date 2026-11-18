@@ -1,8 +1,17 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Brand from './brand.jsx'
+import {
+  alertsFromListings,
+  createApi,
+  createPortalClient,
+  fetchAllListings,
+  listingsToPortal,
+  mapTender,
+  mapVehicle,
+} from './portal-api.js'
 import { HomePricing } from './supplier/screens.jsx'
 import {
   ArrowLeft,
@@ -124,6 +133,7 @@ type UserProfile = {
   tin: string
   phone: string
   isSubscriber: boolean
+  isAdmin: boolean
 }
 
 type AlertNotification = {
@@ -137,666 +147,7 @@ type AlertNotification = {
   targetType?: 'tender' | 'vehicle'
 }
 
-// 1. VEHICLE LOTS FIXTURES (with Keys, Starter, Mileage)
-const VEHICLE_LOTS: VehicleLot[] = [
-  {
-    "id": "ሙከራ-ተ-፩",
-    "title": "የአገልግሎት ላይ የዋለ ቶዮታ ኮሮላ ሽያጭ",
-    "condition": "Used",
-    "conditionLabel": "ያገለገለ",
-    "region": "Addis Ababa",
-    "regionLabel": "አዲስ አበባ",
-    "yardLocation": "አቃቂ፣ አዲስ አበባ",
-    "issuer": "የተሽከርካሪ አስተዳደር ክፍል (ምናባዊ ተቋም)",
-    "issuerCategory": "የተቋም ተሽከርካሪ ሽያጭ",
-    "closeIso": "2026-12-29T10:00:00+03:00",
-    "closeLabel": "ዲሴምበር 29፣ 2026 · 10:00 የምሥራቅ አፍሪካ ሰዓት",
-    "cpoBond": "50,000 ብር",
-    "estimatedReserve": "1,450,000 ብር",
-    "year": 2017,
-    "mileage": "112,450 ኪሎ ሜትር",
-    "keys": "ሁለት ቁልፎች አሉ",
-    "starter": "ሞተሩ በቀላሉ ይነሳል",
-    "fuelType": "ቤንዚን",
-    "transmission": "ባለ አምስት ፍጥነት ማርሽ",
-    "plateStatus": "የተቋም ታርጋ ያለው",
-    "summary": "ይህ የሙከራ ጨረታ ነው። ተሽከርካሪው ከዚህ በፊት ለቢሮ አገልግሎት ውሏል። ተጫራቾች ዋጋ ከማቅረባቸው በፊት መኪናውን በቦታው ማየት ይችላሉ።",
-    "inspectionReport": {
-      "engine": "ሞተሩ ተፈትሾ በአግባቡ ይሠራል።",
-      "gearbox": "ማርሹ በቀላሉ ይቀየራል።",
-      "bodyFrame": "በፊት መከላከያው ላይ ትንሽ ጭረት አለ።",
-      "interior": "መቀመጫዎቹ ጥቂት የአጠቃቀም ምልክቶች አሏቸው።",
-      "tyres": "ተጨማሪ ጎማ አለ።"
-    },
-    "contactPerson": "የተሽከርካሪ ሽያጭ ኮሚቴ",
-    "visitingHours": "ከሰኞ እስከ ዓርብ፣ 09:00–12:00 የምሥራቅ አፍሪካ ሰዓት",
-    "mainImage": "/sedan-demo.webp",
-    "gallery": [
-      {
-        "src": "/sedan-demo.webp",
-        "caption": "የተሽከርካሪው ውጫዊ ገጽታ"
-      },
-      {
-        "src": "/interior-demo.webp",
-        "caption": "የተሽከርካሪው ውስጣዊ ክፍል"
-      },
-      {
-        "src": "/engine-demo.webp",
-        "caption": "የሞተር ክፍል"
-      }
-    ],
-    "noticeRef": "ሙከራ/ተ/፩"
-  },
-  {
-    id: 'EVP-2407-018',
-    title: '2017 Fleet Sedan · Toyota Corolla 1.6L',
-    condition: 'Used',
-    conditionLabel: 'Used Fleet',
-    region: 'Addis Ababa',
-    yardLocation: 'Akaki Federal Equipment Yard, Addis Ababa',
-    issuer: 'Ethiopian Roads Administration Fleet Disposal Unit (Sample Fictional Entity)',
-    issuerCategory: 'Federal Agency Fleet Disposal',
-    closeIso: '2026-12-18T14:00:00+03:00',
-    closeLabel: '18 Dec 2026 · 14:00 EAT',
-    cpoBond: '50,000 ETB',
-    estimatedReserve: '1,450,000 ETB',
-    year: 2017,
-    mileage: '112,450 km (Service Log Checked)',
-    keys: '2 Original Transponder Keys Present',
-    starter: 'Starts & Idles Smoothly (Starter Motor Checked)',
-    fuelType: 'Petrol (Gasoline)',
-    transmission: '5-Speed Manual',
-    plateStatus: 'Government (ERA Code 2) · Duty Paid',
-    summary:
-      'Regular institutional fleet service vehicle released under scheduled 2026 government fleet renewal. Engine starts promptly; full service log maintained by ERA Central Workshop.',
-    inspectionReport: {
-      engine: 'Starts immediately, no visible oil smoke, recent oil filter service recorded at 110,000 km.',
-      gearbox: 'Manual clutch engagement responsive, standard synchromesh wear.',
-      bodyFrame: 'Original chassis straight; superficial cosmetic stone chips on front bumper and lower sill.',
-      interior: 'Original cloth seats clean with minor wear on driver bolster; air conditioning blows cold.',
-      tyres: 'Dunlop 195/65 R15 with ~60% remaining tread; spare wheel and jack verified present.',
-    },
-    contactPerson: 'Ato Getachew Bekele · Fleet Disposal Committee',
-    visitingHours: 'Monday–Friday: 08:30–12:30 EAT & 13:30–16:30 EAT (Gate pass required)',
-    mainImage: '/sedan-demo.webp',
-    gallery: [
-      { src: '/sedan-demo.webp', caption: 'Front 3/4 Exterior Angle at Akaki Lot' },
-      { src: '/interior-demo.webp', caption: 'Driver Cabin & Center Console' },
-      { src: '/engine-demo.webp', caption: '1.6L VVT-i Engine Bay' },
-      { src: '/pickup-demo.webp', caption: 'Rear Profile & Vehicle Yard View' },
-    ],
-    noticeRef: 'ERA/VT/2026/08',
-  },
-  {
-    id: 'EVP-2407-031',
-    title: '2019 Double Cab 4WD Pickup · Isuzu D-Max',
-    condition: 'Damaged',
-    conditionLabel: 'Damaged · Collision Salvage',
-    region: 'Oromia',
-    yardLocation: 'Gelan Regional Transport Depot, Oromia State',
-    issuer: 'Oromia Water Works Construction Enterprise (Sample Fictional Entity)',
-    issuerCategory: 'Regional Enterprise Asset Disposal',
-    closeIso: '2026-12-12T10:30:00+03:00',
-    closeLabel: '12 Dec 2026 · 10:30 EAT',
-    cpoBond: '75,000 ETB',
-    estimatedReserve: '980,000 ETB',
-    year: 2019,
-    mileage: '88,200 km (Odometer Checked)',
-    keys: '1 Working Key (Spare Lost)',
-    starter: 'Cranks · Does Not Idle (Cooling Pack Damaged)',
-    fuelType: 'Turbo Diesel 3.0L',
-    transmission: '5-Speed Manual 4WD',
-    plateStatus: 'Oromia Regional Code 4 · Commercial Transferable',
-    summary:
-      'Collision-damaged field supervision vehicle offered strictly as-is where-is. Front right quarter panel, bumper, and cooling pack have structural impact; towing/flatbed required for recovery.',
-    inspectionReport: {
-      engine: '3.0L Ddi Turbo Diesel cranks; radiator and intercooler punctured from impact, engine not run to avoid overheating.',
-      gearbox: 'Gearbox and 4WD transfer case intact; front right half-shaft requires replacement.',
-      bodyFrame: 'Front right chassis horn deflected approx. 18mm; cab passenger compartment intact.',
-      interior: 'Driver steering wheel airbag deployed; seats and dashboard electronics otherwise intact.',
-      tyres: 'Front right tyre ruptured; remaining three all-terrain tyres in serviceable condition.',
-    },
-    contactPerson: 'W/ro Selamawit Tadesse · Fleet Disposal Committee',
-    visitingHours: 'Monday–Thursday: 09:00–12:00 EAT & 14:00–16:00 EAT',
-    mainImage: '/pickup-demo.webp',
-    gallery: [
-      { src: '/pickup-demo.webp', caption: 'Front Right Collision Damage Profile' },
-      { src: '/engine-demo.webp', caption: 'Turbo Diesel Engine Bay & Cooling Damage' },
-      { src: '/interior-demo.webp', caption: 'Cabin Overview & Deployed Steering Airbag' },
-      { src: '/sedan-demo.webp', caption: 'Depot Yard Overview' },
-    ],
-    noticeRef: 'OWCE/DISP/2026/03',
-  },
-  {
-    id: 'EVP-2407-044',
-    title: '2018 Heavy-Duty 4x4 SUV · Nissan Patrol Y61',
-    condition: 'Used',
-    conditionLabel: 'Used Fleet',
-    region: 'Tigray',
-    yardLocation: 'Mekelle Municipal Yard, Tigray Region',
-    issuer: 'Mekelle Municipal Fleet & Transport Directorate (Sample Fictional Entity)',
-    issuerCategory: 'Municipal Administration Fleet',
-    closeIso: '2026-12-24T16:00:00+03:00',
-    closeLabel: '24 Dec 2026 · 16:00 EAT',
-    cpoBond: '100,000 ETB',
-    estimatedReserve: '2,200,000 ETB',
-    year: 2018,
-    mileage: '142,600 km (Field Fleet Inspection)',
-    keys: '2 Original Keys + Remote Fobs',
-    starter: 'Starts Instantly · Smooth Idle',
-    fuelType: '4.2L Diesel Inline-6',
-    transmission: '5-Speed Manual with High/Low 4WD',
-    plateStatus: 'Tigray Regional Code 1 · Duty Paid',
-    summary:
-      'Robust all-terrain supervision vehicle maintained in northern regional service. Heavy-duty suspension, dual fuel tanks, and mechanical winch equipped. Sold due to standardized fleet transition.',
-    inspectionReport: {
-      engine: '4.2L naturally aspirated diesel runs smoothly with steady oil pressure.',
-      gearbox: 'Solid manual transmission; 4H and 4L mechanical lever shifts engage firmly.',
-      bodyFrame: 'Heavy ladder-frame chassis rust-free; bull bar and rear bumper intact.',
-      interior: 'Heavy vinyl commercial upholstery intact; minor dashboard sun fading.',
-      tyres: 'All 4 Bridgestone Desert Dueller tyres replaced in 2025 (~80% tread).',
-    },
-    contactPerson: 'Ato Haile Mehari · Municipal Asset Officer',
-    visitingHours: 'Tuesday–Friday: 09:00–12:30 EAT & 14:00–16:00 EAT',
-    mainImage: '/sedan-demo.webp',
-    gallery: [
-      { src: '/sedan-demo.webp', caption: 'Fleet SUV Staging at Regional Compound' },
-      { src: '/engine-demo.webp', caption: 'Inline-6 Diesel Mechanical Inspection' },
-      { src: '/interior-demo.webp', caption: 'Driver Cabin & 4x4 Selector Levers' },
-      { src: '/pickup-demo.webp', caption: 'Rear Cargo & Spare Carrier' },
-    ],
-    noticeRef: 'MMF/ASSET/2026/11',
-  },
-]
-
-// 2. PROCUREMENT TENDERS FIXTURES (Public, NGO, Private - Matching Stitch Examples)
-const PROCUREMENT_TENDERS: ProcurementTender[] = [
-  {
-    "id": "ሙከራ-መ-፩",
-    "title": "የትምህርት ቤት ዴስኮች ግዥ",
-    "category": "Public",
-    "categoryLabel": "የመንግሥት ግዥ",
-    "sector": "የትምህርት ቁሳቁስ",
-    "issuer": "የከተማ ትምህርት ጽሕፈት ቤት (ምናባዊ ተቋም)",
-    "refNumber": "ሙከራ/መ/፩",
-    "closeIso": "2026-12-30T14:00:00+03:00",
-    "closeLabel": "ዲሴምበር 30፣ 2026 · 14:00 የምሥራቅ አፍሪካ ሰዓት",
-    "cpoAmount": "15,000 ብር",
-    "documentFee": "ክፍያ የለውም",
-    "region": "አዲስ አበባ",
-    "gazette": "የሙከራ ጨረታ ማስታወቂያ",
-    "summary": "ይህ የሙከራ ጨረታ ነው። የከተማ ትምህርት ጽሕፈት ቤት ብቁ ተጫራቾችን ይጋብዛል። ባለ ሁለት መቀመጫ ዴስኮችን ማምረትና ማቅረብ።",
-    "scopeOfWork": [
-      "ባለ ሁለት መቀመጫ ዴስኮችን ማምረትና ማቅረብ።",
-      "ዴስኮቹን በ30 ቀናት ውስጥ ማስረከብ።"
-    ],
-    "eligibilityRequirements": [
-      "የታደሰ የንግድ ፈቃድ ማቅረብ።",
-      "የግብር ከፋይ መለያ ቁጥር ማቅረብ።"
-    ],
-    "contactPerson": "የግዥ ክፍል",
-    "submissionAddress": "የግዥ ጽሕፈት ቤት፣ አዲስ አበባ",
-    "fullNoticeText": [
-      "ይህ ለማሳያ ብቻ የተዘጋጀ ምናባዊ ጨረታ ነው። ባለ ሁለት መቀመጫ ዴስኮችን ማምረትና ማቅረብ።",
-      "የጨረታ ሰነዱ ከግዥ ክፍሉ በነፃ ይገኛል።",
-      "የጨረታ ሰነዶች እስከ ዲሴምበር 30፣ 2026 በ14:00 የምሥራቅ አፍሪካ ሰዓት በታሸገ ፖስታ መቅረብ አለባቸው።"
-    ]
-  },
-  {
-    "id": "ሙከራ-ድ-፩",
-    "title": "የንጽሕና ቁሳቁስ ግዥ",
-    "category": "NGO",
-    "categoryLabel": "መንግሥታዊ ያልሆነ ድርጅት",
-    "sector": "የንጽሕና ቁሳቁስ",
-    "issuer": "የማኅበረሰብ ድጋፍ ማኅበር (ምናባዊ ተቋም)",
-    "refNumber": "ሙከራ/ድ/፩",
-    "closeIso": "2026-12-30T14:00:00+03:00",
-    "closeLabel": "ዲሴምበር 30፣ 2026 · 14:00 የምሥራቅ አፍሪካ ሰዓት",
-    "cpoAmount": "10,000 ብር",
-    "documentFee": "ክፍያ የለውም",
-    "region": "አዲስ አበባ",
-    "gazette": "የሙከራ ጨረታ ማስታወቂያ",
-    "summary": "ይህ የሙከራ ጨረታ ነው። የማኅበረሰብ ድጋፍ ማኅበር ብቁ ተጫራቾችን ይጋብዛል። ሳሙና፣ የውሃ መያዣና ሌሎች የንጽሕና ቁሳቁሶችን ማቅረብ።",
-    "scopeOfWork": [
-      "ሳሙና፣ የውሃ መያዣና ሌሎች የንጽሕና ቁሳቁሶችን ማቅረብ።",
-      "ከአቅርቦት በፊት አንድ የተሟላ ናሙና ማሳየት።"
-    ],
-    "eligibilityRequirements": [
-      "የታደሰ የንግድ ፈቃድ ማቅረብ።",
-      "የግብር ከፋይ መለያ ቁጥር ማቅረብ።"
-    ],
-    "contactPerson": "የግዥ ክፍል",
-    "submissionAddress": "የግዥ ጽሕፈት ቤት፣ አዲስ አበባ",
-    "fullNoticeText": [
-      "ይህ ለማሳያ ብቻ የተዘጋጀ ምናባዊ ጨረታ ነው። ሳሙና፣ የውሃ መያዣና ሌሎች የንጽሕና ቁሳቁሶችን ማቅረብ።",
-      "የጨረታ ሰነዱ ከግዥ ክፍሉ በነፃ ይገኛል።",
-      "የጨረታ ሰነዶች እስከ ዲሴምበር 30፣ 2026 በ14:00 የምሥራቅ አፍሪካ ሰዓት በታሸገ ፖስታ መቅረብ አለባቸው።"
-    ]
-  },
-  {
-    "id": "ሙከራ-ግ-፩",
-    "title": "የቢሮ ጽዳት አገልግሎት",
-    "category": "Private",
-    "categoryLabel": "የግል ድርጅት",
-    "sector": "የጽዳት አገልግሎት",
-    "issuer": "የከተማ የንግድ ማዕከል (ምናባዊ ተቋም)",
-    "refNumber": "ሙከራ/ግ/፩",
-    "closeIso": "2026-12-30T14:00:00+03:00",
-    "closeLabel": "ዲሴምበር 30፣ 2026 · 14:00 የምሥራቅ አፍሪካ ሰዓት",
-    "cpoAmount": "8,000 ብር",
-    "documentFee": "ክፍያ የለውም",
-    "region": "አዲስ አበባ",
-    "gazette": "የሙከራ ጨረታ ማስታወቂያ",
-    "summary": "ይህ የሙከራ ጨረታ ነው። የከተማ የንግድ ማዕከል ብቁ ተጫራቾችን ይጋብዛል። የቢሮ ክፍሎችንና የጋራ መጠቀሚያ ቦታዎችን በየቀኑ ማጽዳት።",
-    "scopeOfWork": [
-      "የቢሮ ክፍሎችንና የጋራ መጠቀሚያ ቦታዎችን በየቀኑ ማጽዳት።",
-      "የጽዳት መሣሪያዎችንና ቁሳቁሶችን ማቅረብ።"
-    ],
-    "eligibilityRequirements": [
-      "የታደሰ የንግድ ፈቃድ ማቅረብ።",
-      "የግብር ከፋይ መለያ ቁጥር ማቅረብ።"
-    ],
-    "contactPerson": "የግዥ ክፍል",
-    "submissionAddress": "የግዥ ጽሕፈት ቤት፣ አዲስ አበባ",
-    "fullNoticeText": [
-      "ይህ ለማሳያ ብቻ የተዘጋጀ ምናባዊ ጨረታ ነው። የቢሮ ክፍሎችንና የጋራ መጠቀሚያ ቦታዎችን በየቀኑ ማጽዳት።",
-      "የጨረታ ሰነዱ ከግዥ ክፍሉ በነፃ ይገኛል።",
-      "የጨረታ ሰነዶች እስከ ዲሴምበር 30፣ 2026 በ14:00 የምሥራቅ አፍሪካ ሰዓት በታሸገ ፖስታ መቅረብ አለባቸው።"
-    ]
-  },
-  // Stitch Example 1: School Desks (Public Tender)
-  {
-    id: 'PUB-2026-DESK-01',
-    title: 'Procurement and Delivery of 2,400 Standardized Combined Primary School Desks',
-    category: 'Public',
-    categoryLabel: 'Public · Regional Education Bureau',
-    sector: 'Educational Furniture & Woodwork',
-    issuer: 'Oromia Regional Education Bureau (Sample Fictional Entity)',
-    refNumber: 'OREB/NCB/DESK/2026/04',
-    closeIso: '2026-12-22T14:00:00+03:00',
-    closeLabel: '22 Dec 2026 · 14:00 EAT',
-    cpoAmount: '45,000 ETB',
-    documentFee: '400 ETB (Non-refundable)',
-    region: 'Oromia (West Shewa & Jimma School Zones)',
-    gazette: 'Sample Official Gazette Ref: FDRE-TEND-2026/04',
-    summary:
-      'Fictional sample tender for manufacturing, metal frame powder-coating, and delivery of 2,400 dual-seater combined student desks and bench units to primary school clusters.',
-    scopeOfWork: [
-      'Fabrication and supply of 2,400 standardized two-seater desks with attached benches according to national MoE technical specifications.',
-      'Heavy gauge hollow steel tubular frames (25mm x 25mm x 1.5mm) with electrostatically applied anti-rust powder coating.',
-      'Kiln-dried seasoned eucalyptus/cypress hardwood tops and seats treated with non-toxic polyurethane varnish.',
-      'Direct delivery and offloading at designated school cluster distribution depots across Jimma, Ambo, and Adama.',
-    ],
-    eligibilityRequirements: [
-      'Renewed Grade 4 or above Woodwork, Furniture Manufacturing, or General Metal Works trade license.',
-      'Current Tax Clearance Certificate, VAT Registration, and Taxpayer Identification Number (TIN).',
-      'Certified Payment Order (CPO) of 45,000 ETB issued by any recognized commercial bank in Ethiopia.',
-      'Demonstrated capacity to deliver full order quantity within 60 calendar days of contract signing.',
-    ],
-    contactPerson: 'Procurement & Property Administration Directorate · Regional Bureau Compound',
-    submissionAddress: 'Oromia Regional Education Bureau, Sarbet Area, Tender Box #02, Addis Ababa',
-    fullNoticeText: [
-      '1. Oromia Regional Education Bureau invites eligible local manufacturers and suppliers to bid for the supply and delivery of 2,400 school desks.',
-      '2. Bidding will be conducted through National Competitive Bidding (NCB) procedures specified in the regional public procurement directive.',
-      '3. Interested bidders may purchase bidding documents upon payment of a non-refundable 400 ETB fee.',
-      '4. Bids accompanied by a CPO of 45,000 ETB must be deposited in Tender Box #02 on or before 22 Dec 2026 at 14:00 EAT.',
-      '5. Technical bids will be opened immediately thereafter at 14:15 EAT in the presence of bidders or authorized delegates.',
-    ],
-  },
-  // Public Tender 2: Bridge Structural Audit
-  {
-    id: 'PUB-2026-091',
-    title: 'Consultancy Services for Hawassa-Dilla Expressway Bridge Structural Integrity Audit',
-    category: 'Public',
-    categoryLabel: 'Public · Federal Agency',
-    sector: 'Civil Engineering & Infrastructure',
-    issuer: 'Ethiopian Roads Administration (Sample Fictional Entity)',
-    refNumber: 'ERA/ICB/BRIDGE/2026/09',
-    closeIso: '2026-12-22T14:00:00+03:00',
-    closeLabel: '22 Dec 2026 · 14:00 EAT',
-    cpoAmount: '120,000 ETB',
-    documentFee: '500 ETB (Non-refundable)',
-    region: 'Sidama & SNNPR',
-    gazette: 'Sample Official Gazette Ref: FDRE-INFRA-2026/09',
-    summary:
-      'Fictional sample tender for specialized bridge engineering firms to perform non-destructive ultrasonic testing, vibration analysis, and load rating on 14 major river crossings.',
-    scopeOfWork: [
-      'Comprehensive visual and non-destructive testing (NDT) on 14 reinforced concrete bridge superstructures.',
-      'Core sampling, carbonation depth measurement, and ultrasonic pulse velocity testing.',
-      'Finite element load capacity modeling and remaining structural lifespan estimation.',
-      'Preparation of tender-ready structural rehabilitation designs and cost estimates.',
-    ],
-    eligibilityRequirements: [
-      'Category 1 Highway & Bridge Engineering Consultancy License from Ministry of Urban Development.',
-      'Renewed Trade License, TIN, and VAT Registration Certificates.',
-      'Certified Payment Order (CPO) of 120,000 ETB from a licensed commercial bank.',
-      'Demonstrated completion of at least two comparable bridge evaluation assignments in East Africa.',
-    ],
-    contactPerson: 'Engineering Procurement Directorate · ERA Headquarters 2nd Floor',
-    submissionAddress: 'ERA Head Office, Ras Abebe Aregay Street, Tender Box #01, Addis Ababa',
-    fullNoticeText: [
-      '1. The Ethiopian Roads Administration invites eligible consulting engineering firms to submit expressions of interest and sealed financial offers for structural evaluation of the Hawassa-Dilla highway bridges.',
-      '2. Bidding will be conducted through National Competitive Bidding procedures specified in the Federal Public Procurement Directive.',
-      '3. A complete set of bidding documents in English may be purchased by interested bidders upon payment of a non-refundable fee of 500 ETB.',
-      '4. Bids must be delivered to Tender Box #01 on or before 22 Dec 2026 at 14:00 EAT. Electronic bidding is not permitted.',
-      '5. Technical proposals will be opened publicly at 14:30 EAT in the main conference room in the presence of bidders or designated legal representatives.',
-    ],
-  },
-  // Public Tender 3: Data Center Energy Storage
-  {
-    id: 'PUB-2026-104',
-    title: 'Supply, Delivery, and Commissioning of Tier-III Data Center Backup Lithium Energy Storage Units',
-    category: 'Public',
-    categoryLabel: 'Public · State Enterprise',
-    sector: 'Information & Telecommunications',
-    issuer: 'Ethio Telecom Enterprise (Sample Fictional Entity)',
-    refNumber: 'ET/NCB/DC-POWER/2026/41',
-    closeIso: '2026-12-28T10:00:00+03:00',
-    closeLabel: '28 Dec 2026 · 10:00 EAT',
-    cpoAmount: '250,000 ETB',
-    documentFee: '1,000 ETB',
-    region: 'Addis Ababa',
-    gazette: 'Sample Official Gazette Ref: FDRE-TELE-2026/41',
-    summary:
-      'Fictional sample tender for procurement of 2.4 MWh high-discharge LiFePO4 battery storage banks and intelligent BMS power integration for core data center.',
-    scopeOfWork: [
-      'Supply of modular 48V/100Ah rack-mounted lithium iron phosphate battery strings.',
-      'Integration with existing 800kVA Huawei modular UPS system and SCADA monitoring.',
-      'Factory acceptance testing (FAT) certification and on-site load bank validation.',
-      '24-month comprehensive manufacturer warranty and local engineer training.',
-    ],
-    eligibilityRequirements: [
-      'Registered ICT Infrastructure Supplier / Electrical Importer Grade 1.',
-      'Manufacturer Authorization Letter (MAL) from OEM tier-1 battery producer.',
-      'CPO of 250,000 ETB issued by Commercial Bank of Ethiopia or accredited commercial bank.',
-      'ISO 9001 and CE/UL battery safety certification.',
-    ],
-    contactPerson: 'Supply Chain Division · Ethio Telecom Headquarters, Churchill Road',
-    submissionAddress: 'Ethio Telecom Head Office, Room 204, Churchill Road, Addis Ababa',
-    fullNoticeText: [
-      '1. Ethio Telecom intends to procure Tier-III Data Center Lithium Energy Storage Systems for core infrastructure expansion.',
-      '2. Eligible bidders must submit valid trade licenses for electrical/telecom equipment importation and tax clearance certificates.',
-      '3. Bids must be accompanied by a bid security of 250,000 ETB in the form of CPO or unconditional bank guarantee.',
-      '4. Submissions must be delivered to Room 204 before 28 Dec 2026 at 10:00 EAT. Late arrivals will be returned unopened.',
-    ],
-  },
-
-  // Stitch Example 2: Hygiene Kits (NGO Tender)
-  {
-    id: 'NGO-2026-HYG-02',
-    title: 'Supply and Packaging of 12,000 Emergency Family Hygiene Kits & Water Containers',
-    category: 'NGO',
-    categoryLabel: 'NGO · Humanitarian Initiative',
-    sector: 'WASH & Emergency Relief Supplies',
-    issuer: 'East Africa Humanitarian Initiative (Sample Fictional NGO)',
-    refNumber: 'EAHI/RFP/WASH/2026/19',
-    closeIso: '2026-12-19T12:00:00+03:00',
-    closeLabel: '19 Dec 2026 · 12:00 EAT',
-    cpoAmount: '60,000 ETB',
-    documentFee: 'Free of Charge (Digital Download)',
-    region: 'Somali & Afar Regional Logistics Corridors',
-    gazette: 'Sample Humanitarian Logistics Bulletin Ref: NGO-WASH-2026/19',
-    summary:
-      'Fictional sample tender for procurement, quality verification, and kit assembly of emergency family hygiene supplies and collapsible food-grade water containers.',
-    scopeOfWork: [
-      'Supply and batch packaging of 12,000 standardized household hygiene kits in heavy-duty moisture-resistant corrugated boxes.',
-      'Each kit includes: 12 bars antibacterial hand soap (100g), 4 tubes fluoride toothpaste, 1kg laundry detergent powder, and 1 pack sanitary pads.',
-      'Supply of 12,000 food-grade collapsible 20L HDPE jerrycans with UV stabilization and reinforced screw caps.',
-      'Inclusion of 50 water purification chlorine tablets (Aquatabs 67mg) per kit with multilingual pictorial usage instructions.',
-    ],
-    eligibilityRequirements: [
-      'Legally registered commercial supplier or importer of soap, hygiene commodities, or relief goods.',
-      'Valid business license, renewed tax clearance certificate, and Ethiopian FDA hygiene compliance certification.',
-      'Bid security of 60,000 ETB in the form of CPO or unconditional bank guarantee with 90-day validity.',
-      'Past performance certificates demonstrating successful assembly and logistics delivery of relief kits.',
-    ],
-    contactPerson: 'Emergency WASH Procurement Officer · Country Logistics Base',
-    submissionAddress: 'East Africa Humanitarian Initiative, Bole Medhanialem Area, Tender Box #A, Addis Ababa',
-    fullNoticeText: [
-      '1. East Africa Humanitarian Initiative invites qualified relief commodity suppliers to submit bids for 12,000 emergency family hygiene kits.',
-      '2. Bidding documents and detailed technical composition sheets are available free of charge upon email registration.',
-      '3. Physical sample inspection of commodity items is mandatory prior to final commercial bid evaluation.',
-      '4. Sealed proposals with 60,000 ETB CPO must reach Tender Box #A before 19 Dec 2026 at 12:00 EAT.',
-    ],
-  },
-  // NGO Tender 2: Solar Borehole Pumping
-  {
-    id: 'NGO-2026-033',
-    title: 'Supply and Installation of Solar-Powered Borehole Water Pumping Systems for Dollo Ado Settlements',
-    category: 'NGO',
-    categoryLabel: 'NGO · UN Humanitarian Agency',
-    sector: 'Water, Sanitation & Renewable Energy',
-    issuer: 'UNHCR Ethiopia Representation (Sample Fictional Agency)',
-    refNumber: 'UNHCR/ETH/RFP/2026/014',
-    closeIso: '2026-12-19T12:00:00+03:00',
-    closeLabel: '19 Dec 2026 · 12:00 EAT',
-    cpoAmount: '150,000 ETB',
-    documentFee: 'Free of Charge',
-    region: 'Somali Regional State',
-    gazette: 'Sample Humanitarian Bulletin Ref: UNGM-ETH-2026/14',
-    summary:
-      'Fictional sample turnkey engineering procurement for 6 deep borehole solar pumping arrays (45kWp each) with automated chlorination across refugee settlements.',
-    scopeOfWork: [
-      'Design, supply, and installation of Grundfos or equivalent submersible solar pumps (25m³/hr at 140m head).',
-      'Galvanized cyclone-resistant solar mounting structures and Monocrystalline Tier-1 PV modules.',
-      'Automated solar inverter drives with dual hybrid diesel-generator changeover capability.',
-      'Construction of masonry pump control houses, lightning protection systems, and perimeter chain link fences.',
-    ],
-    eligibilityRequirements: [
-      'Valid UNGM Registration (Basic or Level 1 vendor code).',
-      'Water Works Contractor or Electromechanical Category 1 or 2 license.',
-      'Bid Security of 150,000 ETB in form of CPO or Bank Guarantee with 120-day validity.',
-      'Proven experience executing off-grid solar water projects in the Somali or Afar regions.',
-    ],
-    contactPerson: 'UNHCR Supply Management Unit · Bole Sub-City, Addis Ababa',
-    submissionAddress: 'UNHCR Regional Office, Behind ECA Compound, Tender Box #A, Addis Ababa',
-    fullNoticeText: [
-      '1. The Office of the United Nations High Commissioner for Refugees (UNHCR) in Ethiopia invites sealed proposals for solar borehole water pump systems.',
-      '2. Complete tender documents with detailed technical specifications and BOQ schedules are available at no charge on UNGM.',
-      '3. Bids must be submitted in dual sealed envelopes (Envelope 1: Technical & Bid Bond; Envelope 2: Financial Offer).',
-      '4. Closing deadline is strictly 19 Dec 2026 at 12:00 EAT. Bids received after this hour will not be considered.',
-    ],
-  },
-  // NGO Tender 3: Fleet Maintenance
-  {
-    id: 'NGO-2026-058',
-    title: 'Long-Term Fleet Preventative Maintenance and Genuine Spare Parts Supply for 4WD Field Vehicles',
-    category: 'NGO',
-    categoryLabel: 'NGO · Humanitarian Mission',
-    sector: 'Automotive & Logistics Fleet',
-    issuer: 'International Committee of the Red Cross Delegation (Sample Fictional Mission)',
-    refNumber: 'ICRC/ADD/FLEET/2026/02',
-    closeIso: '2026-12-16T16:00:00+03:00',
-    closeLabel: '16 Dec 2026 · 16:00 EAT',
-    cpoAmount: '100,000 ETB',
-    documentFee: 'Free of Charge',
-    region: 'Nationwide (Addis Ababa, Hawassa, Mekelle Hubs)',
-    gazette: 'Sample Logistics Bulletin Ref: ICRC-FLEET-2026/02',
-    summary:
-      'Fictional sample framework agreement for certified automotive garages to maintain a fleet of 85 Toyota Land Cruiser HZJ76/79 and Hilux field vehicles operated across humanitarian corridors.',
-    scopeOfWork: [
-      'Scheduled 5,000 km and 10,000 km preventative servicing, fluid flushes, and brake overhauls.',
-      'Guaranteed supply of genuine Toyota OEM filters, brake components, suspension bushings, and clutches.',
-      'Rapid breakdown field recovery service within 150 km of regional service centers.',
-      'Digital maintenance tracking logs and computerized engine diagnostic reports.',
-    ],
-    eligibilityRequirements: [
-      'Automotive Workshop Grade 1 license with certified hydraulic lifts and diagnostic scanners.',
-      'Authorized dealer or registered importer of genuine OEM vehicle replacement parts.',
-      '100,000 ETB CPO bid bond payable to ICRC Ethiopia Delegation.',
-      'Zero-tolerance compliance with humanitarian neutral procurement protocols.',
-    ],
-    contactPerson: 'ICRC Delegation Logistics Department · Sarbet Area',
-    submissionAddress: 'ICRC Ethiopia Delegation, Sarbet Jomo Kenyatta Street, Addis Ababa',
-    fullNoticeText: [
-      '1. The International Committee of the Red Cross (ICRC) Delegation in Ethiopia invites competitive tenders for vehicle fleet maintenance.',
-      '2. Reputable workshops with facilities in Addis Ababa and regional branches are eligible to bid.',
-      '3. Bid security of 100,000 ETB must be enclosed in the technical envelope.',
-      '4. Tender closes on 16 Dec 2026 at 16:00 EAT. Workshop physical audits will be conducted as part of technical evaluation.',
-    ],
-  },
-
-  // Stitch Example 3: Office Cleaning (Private Tender)
-  {
-    id: 'PRV-2026-CLN-03',
-    title: 'Annual Janitorial, Office Cleaning, and Facility Hygiene Services for Head Office Tower',
-    category: 'Private',
-    categoryLabel: 'Private · Commercial Banking S.C.',
-    sector: 'Facility Management & Janitorial Services',
-    issuer: 'Abyssinia Commercial Bank S.C. (Sample Fictional Enterprise)',
-    refNumber: 'ACB/HO/CLEAN/2026/12',
-    closeIso: '2026-12-24T15:00:00+03:00',
-    closeLabel: '24 Dec 2026 · 15:00 EAT',
-    cpoAmount: '35,000 ETB',
-    documentFee: '300 ETB (Non-refundable)',
-    region: 'Addis Ababa (Financial District, Ras Abebe Aregay Street)',
-    gazette: 'Sample Commercial Press Ref: BANK-CORP-2026/12',
-    summary:
-      'Fictional sample tender for reputable janitorial and facility hygiene enterprises to provide comprehensive daily cleaning, floor polishing, and window care for an 18-storey bank headquarters.',
-    scopeOfWork: [
-      'Comprehensive daily office cleaning, surface sanitization, and trash management across 18 floors and 2 basement parking levels (approx. 24,000 m²).',
-      'Bi-weekly industrial machine scrubbing, marble floor crystallization, and deep carpet hot-water extraction.',
-      'Quarterly high-rise exterior glass curtain wall cleaning using certified rope access or facade cradle operators.',
-      'Provision of eco-friendly cleaning detergents, automated touchless hand sanitizer refills, and institutional restroom paper supplies.',
-    ],
-    eligibilityRequirements: [
-      'Renewed Commercial Cleaning & Janitorial Services trade license with minimum 3 years corporate operating track record.',
-      'Certificate of Competence from Ministry of Labor & Skills for workplace occupational safety and chemical handling.',
-      'Certified Payment Order (CPO) of 35,000 ETB issued by any licensed commercial bank.',
-      'Proof of Workman’s Compensation Insurance and professional indemnity coverage for cleaning personnel.',
-    ],
-    contactPerson: 'General Services & Procurement Department · 8th Floor Cashier',
-    submissionAddress: 'Abyssinia Commercial Bank S.C., Financial District Tower, Tender Box #B, Addis Ababa',
-    fullNoticeText: [
-      '1. Abyssinia Commercial Bank S.C. invites sealed commercial bids from experienced cleaning companies for facility hygiene services.',
-      '2. Tender dossiers can be obtained from the 8th floor General Services Department against payment of 300 ETB.',
-      '3. A compulsory pre-bid building walkthrough and facility inspection is scheduled for 18 Dec 2026 at 10:00 EAT.',
-      '4. Sealed bids accompanied by a 35,000 ETB CPO must be submitted before 24 Dec 2026 at 15:00 EAT.',
-    ],
-  },
-  // Private Tender 2: ATM Kiosks
-  {
-    id: 'PRV-2026-021',
-    title: 'Turnkey Fabrication, Civil Installation, and Branding of Standardized Off-Site ATM Kiosks',
-    category: 'Private',
-    categoryLabel: 'Private · Commercial Banking',
-    sector: 'Banking Infrastructure & Fit-Out',
-    issuer: 'Awash Bank S.C. (Sample Fictional Enterprise)',
-    refNumber: 'AB/HO/PROC/ATM-KIOSK/2026/88',
-    closeIso: '2026-12-26T15:30:00+03:00',
-    closeLabel: '26 Dec 2026 · 15:30 EAT',
-    cpoAmount: '80,000 ETB',
-    documentFee: '300 ETB',
-    region: 'Oromia & Addis Ababa',
-    gazette: 'Sample Commercial Press Ref: BANK-ATM-2026/88',
-    summary:
-      'Fictional sample tender for design, reinforced steel fabrication, biometric access door installation, and thermal insulation of 28 standardized freestanding ATM kiosks.',
-    scopeOfWork: [
-      'Fabrication of bullet-resistant double-skin steel enclosure kiosks with anti-pry anchoring.',
-      'Installation of UPS electrical panel boards, surge protectors, and dual redundant split AC units.',
-      'Exterior corporate branding conforming to Awash Bank brand identity guidelines.',
-      'Concrete plinth casting, electrical trenching, and earthing installation at 28 designated sites.',
-    ],
-    eligibilityRequirements: [
-      'General Metal Fabrication / Building Finishing Contractor Category 3 or higher.',
-      'Renewed Trade License, TIN, and Current Tax Clearance Certificate.',
-      'Bank CPO of 80,000 ETB drawn in favor of Awash Bank S.C.',
-      'Submission of material quality test certificates for steel gauge and powder-coated paint.',
-    ],
-    contactPerson: 'Procurement Directorate · Awash Bank HQ Tower 11th Floor',
-    submissionAddress: 'Awash Bank Headquarters, Balcha Aba Nefso Road, Addis Ababa',
-    fullNoticeText: [
-      '1. Awash Bank S.C. invites sealed competitive bids from eligible contractors for the turnkey manufacturing of 28 ATM Kiosks.',
-      '2. Bid documents can be purchased against payment of 300 ETB at the Cash Office on the 11th floor.',
-      '3. A bid bond of 80,000 ETB must accompany the technical bid document.',
-      '4. Bids must be submitted to the Tender Box at the Procurement Department before 26 Dec 2026 at 15:30 EAT.',
-    ],
-  },
-  // Private Tender 3: Heavy Bulk Haulage
-  {
-    id: 'PRV-2026-045',
-    title: 'Outsourced Heavy Bulk Haulage Transport Services for Mugher Cement Factory Raw Materials',
-    category: 'Private',
-    categoryLabel: 'Private · Industrial Enterprise',
-    sector: 'Logistics & Heavy Freight',
-    issuer: 'Dangote Cement (Ethiopia) Plc (Sample Fictional Enterprise)',
-    refNumber: 'DCP/ETH/LOG/HAUL/2026/15',
-    closeIso: '2026-12-30T11:00:00+03:00',
-    closeLabel: '30 Dec 2026 · 11:00 EAT',
-    cpoAmount: '300,000 ETB',
-    documentFee: '1,500 ETB',
-    region: 'Oromia (Mugher & Adama Corridors)',
-    gazette: 'Sample Commercial Press Ref: IND-HAUL-2026/15',
-    summary:
-      'Fictional sample tender for licensed freight transport fleet operators to haul gypsum, pozzolana, and coal to the Mugher Cement Plant with dedicated 40-ton tipper and flatbed trucks.',
-    scopeOfWork: [
-      'Provision of minimum 25 dedicated 40-tonne commercial tipper/trailer trucks.',
-      'Guaranteed monthly transport capacity of 45,000 metric tonnes across Mugher quarry routes.',
-      'Real-time GPS fleet tracking integration with Dangote logistics dashboard.',
-      'Compliance with occupational safety, driver fatigue management, and cargo transit insurance.',
-    ],
-    eligibilityRequirements: [
-      'Valid Commercial Freight Transport Enterprise Operating Permit Grade 1.',
-      'Title registration certificates proving ownership or certified lease of at least 20 heavy trucks.',
-      'CPO of 300,000 ETB from an accredited Ethiopian commercial bank.',
-      'Valid Goods-in-Transit (GIT) insurance coverage of minimum 15,000,000 ETB.',
-    ],
-    contactPerson: 'Logistics & Procurement Division · Dangote Mugher Office',
-    submissionAddress: 'Dangote Cement Ethiopia Head Office, Meskel Flower Road, Addis Ababa',
-    fullNoticeText: [
-      '1. Dangote Cement (Ethiopia) Plc invites sealed bids from experienced logistics freight companies for heavy bulk transport.',
-      '2. Bid documents can be collected upon presentation of bank deposit slip for 1,500 ETB.',
-      '3. The technical offer must contain valid vehicle registrations, driver certifications, and 300,000 ETB CPO bond.',
-      '4. Deadline for submission of tenders is 30 Dec 2026 at 11:00 EAT.',
-    ],
-  },
-]
-
-// 3. FICTIONAL NOTIFICATIONS / ALERTS
-const INITIAL_ALERTS: AlertNotification[] = [
-  {
-    id: 'alt-01',
-    title: 'New NGO Humanitarian Notice Published',
-    message: 'East Africa Humanitarian Initiative issued a fictional sample tender for 12,000 Emergency Family Hygiene Kits & Water Containers.',
-    category: 'NGO',
-    timestamp: '15m ago',
-    read: false,
-    targetId: 'NGO-2026-HYG-02',
-    targetType: 'tender',
-  },
-  {
-    id: 'alt-02',
-    title: 'Urgent Vehicle Auction Deadline: 48 Hours',
-    message: 'Isuzu D-Max collision salvage pickup (Gelan Depot) closes on 12 Dec 2026 at 10:30 EAT.',
-    category: 'Vehicles',
-    timestamp: '2h ago',
-    read: false,
-    targetId: 'EVP-2407-031',
-    targetType: 'vehicle',
-  },
-  {
-    id: 'alt-03',
-    title: 'Public School Desks Procurement Active',
-    message: 'Oromia Regional Education Bureau published a sample tender for 2,400 Combined Primary School Desks.',
-    category: 'Public',
-    timestamp: '5h ago',
-    read: false,
-    targetId: 'PUB-2026-DESK-01',
-    targetType: 'tender',
-  },
-  {
-    id: 'alt-04',
-    title: 'Bank Facility Notice Published',
-    message: 'Abyssinia Commercial Bank S.C. issued a corporate tender for Annual Janitorial & Office Cleaning Services.',
-    category: 'Private',
-    timestamp: '1d ago',
-    read: true,
-    targetId: 'PRV-2026-CLN-03',
-    targetType: 'tender',
-  },
-]
-
-export default function BidEthiopiaPortal() {
+export default function FanosPortal({ authUrl = '', authKey = '' }: { authUrl?: string; authKey?: string }) {
   // Navigation & View State
   const [activeTab, setActiveTab] = useState<'home' | 'tenders' | 'vehicles' | 'saved' | 'alerts' | 'guidelines' | 'profile'>('home')
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleLot | null>(null)
@@ -820,12 +171,24 @@ export default function BidEthiopiaPortal() {
     'Vehicle Bids' | 'Public Tenders' | 'NGO Tenders' | 'Private Tenders'
   >('Vehicle Bids')
 
-  // Saved Lots & Tenders (Local Persistence)
+  // Live listings from API
+  const [vehicleLots, setVehicleLots] = useState<VehicleLot[]>([])
+  const [procurementTenders, setProcurementTenders] = useState<ProcurementTender[]>([])
+  const [catalogBusy, setCatalogBusy] = useState(true)
+  const [catalogError, setCatalogError] = useState('')
+  const [plans, setPlans] = useState<any>(null)
+  const [accessToken, setAccessToken] = useState<string | null>(null)
+  const [loginBusy, setLoginBusy] = useState(false)
+  const [paymentReference, setPaymentReference] = useState('')
+  const [paymentTerm, setPaymentTerm] = useState('1')
+  const [payments, setPayments] = useState<any[]>([])
+
+  // Saved Lots & Tenders
   const [savedVehicleIds, setSavedVehicleIds] = useState<string[]>([])
   const [savedTenderIds, setSavedTenderIds] = useState<string[]>([])
   const [savedViewFilter, setSavedViewFilter] = useState<'all' | 'vehicles' | 'tenders'>('all')
 
-  // User Profile & Demo Login State
+  // User Profile & OTP Login
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const [loginEmail, setLoginEmail] = useState('')
@@ -852,11 +215,11 @@ export default function BidEthiopiaPortal() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // Alerts List State
-  const [alerts, setAlerts] = useState<AlertNotification[]>(INITIAL_ALERTS)
+  const [alerts, setAlerts] = useState<AlertNotification[]>([])
   const [alertPrefChannels, setAlertPrefChannels] = useState({
     email: true,
     sms: false,
-    telegram: true,
+    telegram: false,
   })
   const [alertPrefCategories, setAlertPrefCategories] = useState({
     public: true,
@@ -865,114 +228,251 @@ export default function BidEthiopiaPortal() {
     vehicles: true,
   })
 
-  // Hydrate persistence from localStorage
-  useEffect(() => {
-    try {
-      const storedVehicles = localStorage.getItem('bid_ethiopia_saved_vehicles')
-      if (storedVehicles) setSavedVehicleIds(JSON.parse(storedVehicles))
-
-      const storedTenders = localStorage.getItem('bid_ethiopia_saved_tenders')
-      if (storedTenders) setSavedTenderIds(JSON.parse(storedTenders))
-
-      const storedUser = localStorage.getItem('bid_ethiopia_user')
-      if (storedUser) {
-        const parsed = JSON.parse(storedUser)
-        setCurrentUser(parsed)
-        setIsSubscriberUnlocked(parsed.isSubscriber)
-      }
-    } catch {
-      // safe fallback
-    }
-  }, [])
-
-  // Scroll to top on navigation change
-  useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
-  }, [activeTab, selectedVehicle, selectedTender])
-
-  // Save/Unsave Vehicles
-  const toggleSaveVehicle = (vehicleId: string) => {
-    setSavedVehicleIds((prev) => {
-      const isSaved = prev.includes(vehicleId)
-      const updated = isSaved ? prev.filter((id) => id !== vehicleId) : [...prev, vehicleId]
-      try {
-        localStorage.setItem('bid_ethiopia_saved_vehicles', JSON.stringify(updated))
-      } catch {}
-      return updated
-    })
-    showToast(
-      savedVehicleIds.includes(vehicleId)
-        ? 'Removed vehicle lot from saved bookmarks.'
-        : 'Saved vehicle lot to bookmarks (access to full dossier remains separate).'
-    )
-  }
-
-  // Save/Unsave Tenders
-  const toggleSaveTender = (tenderId: string) => {
-    setSavedTenderIds((prev) => {
-      const isSaved = prev.includes(tenderId)
-      const updated = isSaved ? prev.filter((id) => id !== tenderId) : [...prev, tenderId]
-      try {
-        localStorage.setItem('bid_ethiopia_saved_tenders', JSON.stringify(updated))
-      } catch {}
-      return updated
-    })
-    showToast(
-      savedTenderIds.includes(tenderId)
-        ? 'Removed tender from saved bookmarks.'
-        : 'Saved procurement tender to bookmarks (access to technical dossier remains separate).'
-    )
-  }
+  const client = useMemo(() => createPortalClient(authUrl, authKey), [authUrl, authKey])
+  const api = useMemo(() => createApi(() => accessToken), [accessToken])
 
   const showToast = (msg: string) => {
     setFeedbackToast(msg)
     setTimeout(() => setFeedbackToast(null), 4000)
   }
 
-  // Demo Login Actions
-  const handleSendCode = (e?: React.FormEvent) => {
+  const applyAccount = useCallback((me: any, emailFallback = '') => {
+    if (!me) {
+      setCurrentUser(null)
+      setIsSubscriberUnlocked(false)
+      return
+    }
+    const profile: UserProfile = {
+      name: me.email?.split('@')[0] || 'Bidder',
+      email: me.email || emailFallback,
+      organization: me.admin ? 'Superadmin' : 'Registered bidder',
+      tin: '—',
+      phone: '—',
+      isSubscriber: !!me.subscribed || !!me.admin,
+      isAdmin: !!me.admin,
+    }
+    setCurrentUser(profile)
+    setIsSubscriberUnlocked(!!me.subscribed || !!me.admin)
+    setAlertPrefChannels((prev) => ({ ...prev, email: !!me.emailAlerts }))
+  }, [])
+
+  const refreshAccount = useCallback(async (token = accessToken) => {
+    if (!token) {
+      applyAccount(null)
+      setSavedVehicleIds([])
+      setSavedTenderIds([])
+      setPayments([])
+      return
+    }
+    const me = await api('me')
+    applyAccount(me)
+    const saved = await api('saved')
+    const vehicleIds: string[] = []
+    const tenderIds: string[] = []
+    for (const row of saved) {
+      if (row.vehicle) vehicleIds.push(row.id)
+      else tenderIds.push(row.id)
+    }
+    setSavedVehicleIds(vehicleIds)
+    setSavedTenderIds(tenderIds)
+    setPayments(await api('payments'))
+  }, [accessToken, api, applyAccount])
+
+  const loadCatalog = useCallback(async () => {
+    setCatalogBusy(true)
+    setCatalogError('')
+    try {
+      const [items, planData] = await Promise.all([
+        fetchAllListings(api),
+        api('plans').catch(() => null),
+      ])
+      const { vehicles, tenders } = listingsToPortal(items)
+      setVehicleLots(vehicles as VehicleLot[])
+      setProcurementTenders(tenders as ProcurementTender[])
+      setAlerts(alertsFromListings(vehicles, tenders) as AlertNotification[])
+      if (planData) setPlans(planData)
+    } catch (error: any) {
+      setCatalogError(error?.message || 'Could not load listings.')
+      setVehicleLots([])
+      setProcurementTenders([])
+      setAlerts([])
+    } finally {
+      setCatalogBusy(false)
+    }
+  }, [api])
+
+  useEffect(() => {
+    if (!client) return
+    client.auth.getSession().then(({ data }) => {
+      setAccessToken(data.session?.access_token ?? null)
+    })
+    const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
+      setAccessToken(session?.access_token ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [client])
+
+  useEffect(() => {
+    void loadCatalog()
+  }, [loadCatalog])
+
+  useEffect(() => {
+    void refreshAccount().catch((error) => showToast(error.message || 'Could not load account.'))
+  }, [refreshAccount])
+
+  const deepLinkHandled = useRef('')
+  // Deep links from email/push: /?bid=<id>
+  useEffect(() => {
+    if (catalogBusy) return
+    const bid = new URLSearchParams(window.location.search).get('bid')
+    if (!bid || deepLinkHandled.current === bid) return
+    deepLinkHandled.current = bid
+    void api('listings/' + bid)
+      .then((row) => {
+        if (row?.vehicle) {
+          setSelectedVehicle(mapVehicle(row) as VehicleLot)
+          setSelectedTender(null)
+          setActiveVehiclePhotoIndex(0)
+        } else if (row) {
+          setSelectedTender(mapTender(row) as ProcurementTender)
+          setSelectedVehicle(null)
+        }
+      })
+      .catch(() => showToast('Listing not found.'))
+  }, [catalogBusy, api])
+
+  // Scroll to top on navigation change
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }, [activeTab, selectedVehicle, selectedTender])
+
+  const persistSave = async (id: string, isSaved: boolean) => {
+    if (!accessToken) {
+      setIsLoginModalOpen(true)
+      showToast('Sign in to save opportunities.')
+      return false
+    }
+    await api('saved/' + id, { method: isSaved ? 'DELETE' : 'PUT' })
+    return true
+  }
+
+  // Save/Unsave Vehicles
+  const toggleSaveVehicle = async (vehicleId: string) => {
+    const isSaved = savedVehicleIds.includes(vehicleId)
+    try {
+      const ok = await persistSave(vehicleId, isSaved)
+      if (!ok) return
+      setSavedVehicleIds((prev) => (isSaved ? prev.filter((id) => id !== vehicleId) : [...prev, vehicleId]))
+      showToast(isSaved ? 'Removed vehicle lot from saved bookmarks.' : 'Saved vehicle lot to bookmarks.')
+    } catch (error: any) {
+      showToast(error.message || 'Could not update saved list.')
+    }
+  }
+
+  // Save/Unsave Tenders
+  const toggleSaveTender = async (tenderId: string) => {
+    const isSaved = savedTenderIds.includes(tenderId)
+    try {
+      const ok = await persistSave(tenderId, isSaved)
+      if (!ok) return
+      setSavedTenderIds((prev) => (isSaved ? prev.filter((id) => id !== tenderId) : [...prev, tenderId]))
+      showToast(isSaved ? 'Removed tender from saved bookmarks.' : 'Saved procurement tender to bookmarks.')
+    } catch (error: any) {
+      showToast(error.message || 'Could not update saved list.')
+    }
+  }
+
+  const handleSendCode = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
+    if (!client) {
+      setLoginError('Email sign-in is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.')
+      return
+    }
     if (!loginEmail || !loginEmail.includes('@')) {
       setLoginError('Please enter a valid business or personal email address.')
       return
     }
+    setLoginBusy(true)
     setLoginError('')
-    setLoginStep('code')
+    try {
+      const { error } = await client.auth.signInWithOtp({ email: loginEmail })
+      if (error) throw error
+      setLoginStep('code')
+      showToast('Check your inbox for your sign-in code.')
+    } catch (error: any) {
+      setLoginError(error.message || 'Could not send code.')
+    } finally {
+      setLoginBusy(false)
+    }
   }
 
-  const handleVerifyCode = (e?: React.FormEvent) => {
+  const handleVerifyCode = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
-    if (loginCode.trim().length < 4) {
-      setLoginError('Please enter the 6-digit confirmation code (Demo: 849201).')
+    if (!client) {
+      setLoginError('Email sign-in is not configured.')
       return
     }
-    const demoUser: UserProfile = {
-      name: 'Abebe Kebede',
-      email: loginEmail,
-      organization: 'Kebede & Associates Trading Enterprise',
-      tin: '0029481741 (Sample TIN)',
-      phone: '+251 91 124 5589',
-      isSubscriber: true,
+    if (!/^\d{6}$/.test(loginCode.trim())) {
+      setLoginError('Enter the 6-digit confirmation code from your email.')
+      return
     }
-    setCurrentUser(demoUser)
-    setIsSubscriberUnlocked(true)
+    setLoginBusy(true)
+    setLoginError('')
     try {
-      localStorage.setItem('bid_ethiopia_user', JSON.stringify(demoUser))
-    } catch {}
-    setIsLoginModalOpen(false)
-    setLoginStep('email')
-    setLoginCode('')
-    setLoginEmail('')
-    showToast('Signed in successfully as Abebe Kebede · Enterprise Subscriber active.')
+      const { data, error } = await client.auth.verifyOtp({
+        email: loginEmail,
+        token: loginCode.trim(),
+        type: 'email',
+      })
+      if (error) throw error
+      setAccessToken(data.session?.access_token ?? null)
+      setIsLoginModalOpen(false)
+      setLoginStep('email')
+      setLoginCode('')
+      setLoginEmail('')
+      showToast('Signed in successfully.')
+      await loadCatalog()
+    } catch (error: any) {
+      setLoginError(error.message || 'Invalid or expired code.')
+    } finally {
+      setLoginBusy(false)
+    }
   }
 
-  const handleSignOut = () => {
-    setCurrentUser(null)
-    setIsSubscriberUnlocked(false)
-    try {
-      localStorage.removeItem('bid_ethiopia_user')
-    } catch {}
+  const handleSignOut = async () => {
+    if (client) await client.auth.signOut()
+    setAccessToken(null)
+    applyAccount(null)
+    setSavedVehicleIds([])
+    setSavedTenderIds([])
+    setPayments([])
     showToast('Signed out. Switched to public guest mode.')
+    void loadCatalog()
+  }
+
+  const submitPaymentReference = async () => {
+    if (!accessToken) {
+      setIsLoginModalOpen(true)
+      return
+    }
+    try {
+      await api('payments', { method: 'POST', data: { reference: paymentReference, months: Number(paymentTerm) } })
+      setPaymentReference('')
+      setPayments(await api('payments'))
+      showToast('Payment reference submitted for staff verification.')
+    } catch (error: any) {
+      showToast(error.message || 'Could not submit payment reference.')
+    }
+  }
+
+  const saveEmailAlertPref = async (enabled: boolean) => {
+    setAlertPrefChannels((prev) => ({ ...prev, email: enabled }))
+    if (!accessToken) return
+    try {
+      await api('preferences', { method: 'PUT', data: { emailAlerts: enabled } })
+    } catch (error: any) {
+      showToast(error.message || 'Could not save alert preference.')
+    }
   }
 
   // Navigation Helper
@@ -983,7 +483,7 @@ export default function BidEthiopiaPortal() {
     setIsMobileMenuOpen(false)
   }
 
-  // Exact Category Navigator (Stitch alignment)
+  // Exact Category Navigator
   const navigateToCategory = (cat: 'Vehicle Bids' | 'Public Tenders' | 'NGO Tenders' | 'Private Tenders') => {
     setSelectedVehicle(null)
     setSelectedTender(null)
@@ -997,21 +497,33 @@ export default function BidEthiopiaPortal() {
   }
 
   // Open Vehicle
-  const openVehicleDetail = (lot: VehicleLot) => {
+  const openVehicleDetail = async (lot: VehicleLot) => {
     setSelectedVehicle(lot)
     setSelectedTender(null)
     setActiveVehiclePhotoIndex(0)
+    try {
+      const row = await api('listings/' + lot.id)
+      if (row?.vehicle) setSelectedVehicle(mapVehicle(row) as VehicleLot)
+    } catch {
+      // keep list preview if detail fetch fails
+    }
   }
 
   // Open Tender
-  const openTenderDetail = (tender: ProcurementTender) => {
+  const openTenderDetail = async (tender: ProcurementTender) => {
     setSelectedTender(tender)
     setSelectedVehicle(null)
+    try {
+      const row = await api('listings/' + tender.id)
+      if (row && !row.vehicle) setSelectedTender(mapTender(row) as ProcurementTender)
+    } catch {
+      // keep list preview if detail fetch fails
+    }
   }
 
   // Filtered Vehicles
   const filteredVehicles = useMemo(() => {
-    return VEHICLE_LOTS.filter((lot) => {
+    return vehicleLots.filter((lot) => {
       const matchCond = vehicleConditionFilter === 'All conditions' || lot.condition === vehicleConditionFilter
       const matchReg = vehicleRegionFilter === 'All regions' || lot.region === vehicleRegionFilter
       const q = vehicleSearchQuery.trim().toLowerCase()
@@ -1025,11 +537,11 @@ export default function BidEthiopiaPortal() {
       if (vehicleClosingSoon) return new Date(a.closeIso).getTime() - new Date(b.closeIso).getTime()
       return 0
     })
-  }, [vehicleConditionFilter, vehicleRegionFilter, vehicleSearchQuery, vehicleClosingSoon])
+  }, [vehicleLots, vehicleConditionFilter, vehicleRegionFilter, vehicleSearchQuery, vehicleClosingSoon])
 
   // Filtered Tenders
   const filteredTenders = useMemo(() => {
-    return PROCUREMENT_TENDERS.filter((tender) => {
+    return procurementTenders.filter((tender) => {
       const matchCat = tenderCategoryFilter === 'All' || tender.category === tenderCategoryFilter
       const matchSec = tenderSectorFilter === 'All sectors' || tender.sector === tenderSectorFilter
       const q = tenderSearchQuery.trim().toLowerCase()
@@ -1044,29 +556,29 @@ export default function BidEthiopiaPortal() {
       if (tenderClosingSoon) return new Date(a.closeIso).getTime() - new Date(b.closeIso).getTime()
       return 0
     })
-  }, [tenderCategoryFilter, tenderSectorFilter, tenderSearchQuery, tenderClosingSoon])
+  }, [procurementTenders, tenderCategoryFilter, tenderSectorFilter, tenderSearchQuery, tenderClosingSoon])
 
   const savedVehicles = useMemo(() => {
-    return VEHICLE_LOTS.filter((v) => savedVehicleIds.includes(v.id))
-  }, [savedVehicleIds])
+    return vehicleLots.filter((v) => savedVehicleIds.includes(v.id))
+  }, [vehicleLots, savedVehicleIds])
 
   const savedTenders = useMemo(() => {
-    return PROCUREMENT_TENDERS.filter((t) => savedTenderIds.includes(t.id))
-  }, [savedTenderIds])
+    return procurementTenders.filter((t) => savedTenderIds.includes(t.id))
+  }, [procurementTenders, savedTenderIds])
 
   // Selected Category Preview for Home Portal
   const previewTenders = useMemo(() => {
     if (selectedHomeCategory === 'Public Tenders') {
-      return PROCUREMENT_TENDERS.filter((t) => t.category === 'Public')
+      return procurementTenders.filter((t) => t.category === 'Public')
     }
     if (selectedHomeCategory === 'NGO Tenders') {
-      return PROCUREMENT_TENDERS.filter((t) => t.category === 'NGO')
+      return procurementTenders.filter((t) => t.category === 'NGO')
     }
     if (selectedHomeCategory === 'Private Tenders') {
-      return PROCUREMENT_TENDERS.filter((t) => t.category === 'Private')
+      return procurementTenders.filter((t) => t.category === 'Private')
     }
     return []
-  }, [selectedHomeCategory])
+  }, [procurementTenders, selectedHomeCategory])
 
   const totalSavedCount = savedVehicleIds.length + savedTenderIds.length
   const unreadAlertsCount = alerts.filter((a) => !a.read).length
@@ -1075,7 +587,7 @@ export default function BidEthiopiaPortal() {
     <div className="min-h-screen bg-[#FAF8F5] text-[#16201B] flex flex-col font-sans selection:bg-[#1B4332] selection:text-white">
       {/* 1. COMPACT TOP HEADER (56px) with Forest Green Accent (#1B4332) */}
       <header className="sticky top-0 z-30 h-14 bg-[#FFFFFF]/95 backdrop-blur-md border-b border-[#E5DFD5] px-3 sm:px-4 lg:px-6 flex items-center justify-between">
-        {/* Brand & Demo Pill */}
+        {/* Brand */}
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={() => navigateTo('home')}
@@ -1084,9 +596,6 @@ export default function BidEthiopiaPortal() {
           >
             <div className="flex items-center gap-1.5">
               <Brand />
-              <span className="rounded border border-[#C8C2B3] bg-[#EFEBE1] px-1 py-0.2 text-[9px] sm:text-[10px] font-bold tracking-widest text-[#635E53] shrink-0">
-                DEMO
-              </span>
             </div>
           </button>
         </div>
@@ -1115,7 +624,7 @@ export default function BidEthiopiaPortal() {
             <Truck className="size-3 text-[#1B4332]" />
             Vehicle Bids
             <span className="rounded-full bg-[#E2EDE6] px-1 py-0.2 text-[9px] font-bold text-[#1B4332]">
-              {VEHICLE_LOTS.length}
+              {vehicleLots.length}
             </span>
           </button>
 
@@ -1130,7 +639,7 @@ export default function BidEthiopiaPortal() {
             <Building2 className="size-3 text-[#1B4332]" />
             Public Tenders
             <span className="rounded-full bg-[#D8F3DC] px-1 py-0.2 text-[9px] font-bold text-[#1B4332]">
-              {PROCUREMENT_TENDERS.filter((t) => t.category === 'Public').length}
+              {procurementTenders.filter((t) => t.category === 'Public').length}
             </span>
           </button>
 
@@ -1145,7 +654,7 @@ export default function BidEthiopiaPortal() {
             <Globe className="size-3 text-[#1D4ED8]" />
             NGO Tenders
             <span className="rounded-full bg-[#EFF6FF] px-1 py-0.2 text-[9px] font-bold text-[#1D4ED8]">
-              {PROCUREMENT_TENDERS.filter((t) => t.category === 'NGO').length}
+              {procurementTenders.filter((t) => t.category === 'NGO').length}
             </span>
           </button>
 
@@ -1160,7 +669,7 @@ export default function BidEthiopiaPortal() {
             <Briefcase className="size-3 text-[#B45309]" />
             Private Tenders
             <span className="rounded-full bg-[#FEF3C7] px-1 py-0.2 text-[9px] font-bold text-[#B45309]">
-              {PROCUREMENT_TENDERS.filter((t) => t.category === 'Private').length}
+              {procurementTenders.filter((t) => t.category === 'Private').length}
             </span>
           </button>
 
@@ -1210,7 +719,7 @@ export default function BidEthiopiaPortal() {
           </button>
         </nav>
 
-        {/* Right Utility Bar: Profile, Alerts Bell, Demo Subscriber Pill */}
+        {/* Right Utility Bar: Profile, Alerts Bell */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Quick Notification Bell */}
           <button
@@ -1245,7 +754,7 @@ export default function BidEthiopiaPortal() {
               className="inline-flex items-center gap-1.5 rounded-lg border border-[#1B4332] bg-[#1B4332] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#2D6A4F] transition shadow-2xs"
             >
               <LogIn className="size-3.5" />
-              <span>Demo Login</span>
+              <span>Sign in</span>
             </button>
           )}
 
@@ -1283,7 +792,7 @@ export default function BidEthiopiaPortal() {
               <Truck className="size-4 text-[#1B4332]" />
               Vehicle Bids
             </span>
-            <span className="text-[10px]">{VEHICLE_LOTS.length} Lots</span>
+            <span className="text-[10px]">{vehicleLots.length} Lots</span>
           </button>
           <button
             onClick={() => navigateToCategory('Public Tenders')}
@@ -1295,7 +804,7 @@ export default function BidEthiopiaPortal() {
               <Building2 className="size-4 text-[#1B4332]" />
               Public Tenders
             </span>
-            <span className="text-[10px]">{PROCUREMENT_TENDERS.filter((t) => t.category === 'Public').length} Tenders</span>
+            <span className="text-[10px]">{procurementTenders.filter((t) => t.category === 'Public').length} Tenders</span>
           </button>
           <button
             onClick={() => navigateToCategory('NGO Tenders')}
@@ -1307,7 +816,7 @@ export default function BidEthiopiaPortal() {
               <Globe className="size-4 text-[#1D4ED8]" />
               NGO Tenders
             </span>
-            <span className="text-[10px]">{PROCUREMENT_TENDERS.filter((t) => t.category === 'NGO').length} Tenders</span>
+            <span className="text-[10px]">{procurementTenders.filter((t) => t.category === 'NGO').length} Tenders</span>
           </button>
           <button
             onClick={() => navigateToCategory('Private Tenders')}
@@ -1319,7 +828,7 @@ export default function BidEthiopiaPortal() {
               <Briefcase className="size-4 text-[#B45309]" />
               Private Tenders
             </span>
-            <span className="text-[10px]">{PROCUREMENT_TENDERS.filter((t) => t.category === 'Private').length} Tenders</span>
+            <span className="text-[10px]">{procurementTenders.filter((t) => t.category === 'Private').length} Tenders</span>
           </button>
           <button
             onClick={() => navigateTo('saved')}
@@ -1361,7 +870,7 @@ export default function BidEthiopiaPortal() {
             }}
             className="w-full flex items-center justify-between p-2.5 rounded-lg text-xs font-semibold text-[#1B4332] bg-[#D8F3DC] mt-2"
           >
-            <span>{currentUser ? 'My Profile & Settings' : 'Demo Subscriber Login'}</span>
+            <span>{currentUser ? 'My Profile & Settings' : 'Sign in'}</span>
             <User className="size-4" />
           </button>
         </div>
@@ -1473,7 +982,7 @@ export default function BidEthiopiaPortal() {
                     id: 'Vehicle Bids' as const,
                     label: 'Vehicle Bids',
                     sublabel: 'Auctions & Fleet Disposal',
-                    count: `${VEHICLE_LOTS.length} Lots`,
+                    count: `${vehicleLots.length} Lots`,
                     icon: Truck,
                     accent: 'bg-[#D8F3DC] text-[#1B4332]',
                   },
@@ -1481,7 +990,7 @@ export default function BidEthiopiaPortal() {
                     id: 'Public Tenders' as const,
                     label: 'Public Tenders',
                     sublabel: 'Federal & Regional Bureaus',
-                    count: `${PROCUREMENT_TENDERS.filter((t) => t.category === 'Public').length} Tenders`,
+                    count: `${procurementTenders.filter((t) => t.category === 'Public').length} Tenders`,
                     icon: Building2,
                     accent: 'bg-[#EAF7EE] text-[#1B4332]',
                   },
@@ -1489,7 +998,7 @@ export default function BidEthiopiaPortal() {
                     id: 'NGO Tenders' as const,
                     label: 'NGO Tenders',
                     sublabel: 'UN & Relief Missions',
-                    count: `${PROCUREMENT_TENDERS.filter((t) => t.category === 'NGO').length} Tenders`,
+                    count: `${procurementTenders.filter((t) => t.category === 'NGO').length} Tenders`,
                     icon: Globe,
                     accent: 'bg-[#EFF6FF] text-[#1D4ED8]',
                   },
@@ -1497,7 +1006,7 @@ export default function BidEthiopiaPortal() {
                     id: 'Private Tenders' as const,
                     label: 'Private Tenders',
                     sublabel: 'Commercial & Corporate',
-                    count: `${PROCUREMENT_TENDERS.filter((t) => t.category === 'Private').length} Tenders`,
+                    count: `${procurementTenders.filter((t) => t.category === 'Private').length} Tenders`,
                     icon: Briefcase,
                     accent: 'bg-[#FEF3C7] text-[#B45309]',
                   },
@@ -1586,7 +1095,7 @@ export default function BidEthiopiaPortal() {
               {/* Preview Cards Grid */}
               {selectedHomeCategory === 'Vehicle Bids' ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  {VEHICLE_LOTS.map((lot) => {
+                  {vehicleLots.map((lot) => {
                     const isSaved = savedVehicleIds.includes(lot.id)
                     return (
                       <div
@@ -1757,7 +1266,7 @@ export default function BidEthiopiaPortal() {
               {/* Preview Footer Callout */}
               <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#6E695F] border-t border-[#E5DFD5]">
                 <span>
-                  Showing 3 sample listings for {selectedHomeCategory} · All issuers and notices are fictional
+                  {catalogBusy ? "Loading listings…" : catalogError ? catalogError : `Showing live listings for ${selectedHomeCategory}`}
                 </span>
                 <button
                   onClick={() => navigateToCategory(selectedHomeCategory)}
@@ -2067,7 +1576,7 @@ export default function BidEthiopiaPortal() {
 
             {/* 2-Column Detail Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              {/* Left Column (7 cols): Scope, Eligibility, Official Demo Notice */}
+              {/* Left Column (7 cols): Scope, Eligibility, Official notice */}
               <div className="lg:col-span-7 space-y-6">
                 {/* Scope of Work */}
                 <div className="bg-white border border-[#E5DFD5] rounded-xl p-5 shadow-xs space-y-3">
@@ -2099,7 +1608,7 @@ export default function BidEthiopiaPortal() {
                   </ul>
                 </div>
 
-                {/* Official Demo Gazette Notice Reference Box */}
+                {/* Official notice reference */}
                 <div className="bg-white border border-[#E5DFD5] rounded-xl p-4.5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-[#FAF8F5] text-[#1B4332] border border-[#E5DFD5]">
@@ -2128,7 +1637,7 @@ export default function BidEthiopiaPortal() {
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#1B4332] text-xs font-semibold text-white hover:bg-[#2D6A4F] transition shrink-0"
                   >
                     <Eye className="size-3.5" />
-                    <span>Open Official Demo Notice</span>
+                    <span>Open official notice</span>
                   </button>
                 </div>
               </div>
@@ -2199,10 +1708,10 @@ export default function BidEthiopiaPortal() {
 
                     <button
                       type="button"
-                      onClick={() => setIsSubscriberUnlocked(!isSubscriberUnlocked)}
+                      onClick={() => { if (!currentUser) setIsLoginModalOpen(true) }}
                       className="text-xs font-semibold px-2.5 py-1 rounded-md border border-[#E5DFD5] bg-[#FAF8F5] hover:bg-[#EFECE6] text-[#1B4332] transition"
                     >
-                      {isSubscriberUnlocked ? 'Switch to Guest' : 'View as Demo Subscriber'}
+                      {isSubscriberUnlocked ? 'Switch to Guest' : 'Sign in for full access'}
                     </button>
                   </div>
 
@@ -2233,7 +1742,7 @@ export default function BidEthiopiaPortal() {
                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#1B4332] text-white text-xs font-bold hover:bg-[#2D6A4F] transition shadow-xs"
                       >
                         <Unlock className="size-3.5" />
-                        <span>View as Demo Subscriber</span>
+                        <span>Sign in for full access</span>
                       </button>
                     </div>
                   ) : (
@@ -2366,6 +1875,7 @@ export default function BidEthiopiaPortal() {
                 <div className="space-y-3">
                   <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] rounded-xl overflow-hidden bg-[#E8E4DA] border border-[#E5DFD5] shadow-xs">
                     <Image
+                      unoptimized
                       src={
                         !isSubscriberUnlocked
                           ? selectedVehicle.mainImage
@@ -2430,7 +1940,7 @@ export default function BidEthiopiaPortal() {
                             }`}
                             aria-label={`Select photo ${idx + 1}: ${item.caption}`}
                           >
-                            <Image src={item.src} alt={item.caption} fill sizes="150px" className="object-cover" />
+                            <Image unoptimized src={item.src} alt={item.caption} fill sizes="150px" className="object-cover" />
                           </button>
                         ))}
                       </div>
@@ -2447,12 +1957,12 @@ export default function BidEthiopiaPortal() {
                           onClick={() => setIsSubscriberUnlocked(true)}
                           className="text-xs font-bold text-[#1B4332] hover:underline"
                         >
-                          View as Demo Subscriber
+                          Sign in for full access
                         </button>
                       </div>
                       <div className="grid grid-cols-4 gap-2.5 opacity-60">
                         <div className="relative aspect-[16/10] rounded-lg overflow-hidden border-2 border-[#1B4332]">
-                          <Image src={selectedVehicle.mainImage} alt="Cover" fill sizes="120px" className="object-cover" />
+                          <Image unoptimized src={selectedVehicle.mainImage} alt="Cover" fill sizes="120px" className="object-cover" />
                         </div>
                         {selectedVehicle.gallery.slice(1).map((_, index) => (
                           <div
@@ -2598,7 +2108,7 @@ export default function BidEthiopiaPortal() {
                   </div>
                 </div>
 
-                {/* Working Access Panel: View as Demo Subscriber Toggle */}
+                {/* Working Access Panel: Sign in for full access Toggle */}
                 <div className="bg-white border border-[#E5DFD5] rounded-xl p-5 shadow-xs space-y-4">
                   <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3">
                     <div className="flex items-center gap-2">
@@ -2625,10 +2135,10 @@ export default function BidEthiopiaPortal() {
 
                     <button
                       type="button"
-                      onClick={() => setIsSubscriberUnlocked(!isSubscriberUnlocked)}
+                      onClick={() => { if (!currentUser) setIsLoginModalOpen(true) }}
                       className="text-xs font-semibold px-2.5 py-1 rounded-md border border-[#E5DFD5] bg-[#FAF8F5] hover:bg-[#EFECE6] text-[#1B4332] transition"
                     >
-                      {isSubscriberUnlocked ? 'Switch to Guest' : 'View as Demo Subscriber'}
+                      {isSubscriberUnlocked ? 'Switch to Guest' : 'Sign in for full access'}
                     </button>
                   </div>
 
@@ -2643,7 +2153,7 @@ export default function BidEthiopiaPortal() {
                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#1B4332] text-white text-xs font-bold hover:bg-[#2D6A4F] transition shadow-xs"
                       >
                         <Unlock className="size-3.5" />
-                        <span>View as Demo Subscriber</span>
+                        <span>Sign in for full access</span>
                       </button>
                     </div>
                   ) : (
@@ -2880,6 +2390,7 @@ export default function BidEthiopiaPortal() {
                           className="relative w-full aspect-[16/10] bg-[#E8E4DA] overflow-hidden cursor-pointer"
                         >
                           <Image
+                            unoptimized
                             src={lot.mainImage}
                             alt={lot.title}
                             fill
@@ -3256,10 +2767,10 @@ export default function BidEthiopiaPortal() {
                       <button
                         onClick={() => {
                           if (alert.targetType === 'tender') {
-                            const found = PROCUREMENT_TENDERS.find((t) => t.id === alert.targetId)
+                            const found = procurementTenders.find((t) => t.id === alert.targetId)
                             if (found) openTenderDetail(found)
                           } else {
-                            const found = VEHICLE_LOTS.find((v) => v.id === alert.targetId)
+                            const found = vehicleLots.find((v) => v.id === alert.targetId)
                             if (found) openVehicleDetail(found)
                           }
                         }}
@@ -3284,35 +2795,16 @@ export default function BidEthiopiaPortal() {
                     <input
                       type="checkbox"
                       checked={alertPrefChannels.email}
-                      onChange={(e) =>
-                        setAlertPrefChannels({ ...alertPrefChannels, email: e.target.checked })
-                      }
+                      onChange={(e) => {
+                        void saveEmailAlertPref(e.target.checked)
+                      }}
                       className="rounded text-[#1B4332] focus:ring-[#1B4332]"
                     />
                     <span>Daily Email Digest (EAT Morning)</span>
                   </label>
-                  <label className="flex items-center gap-2 text-[#16201B] cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={alertPrefChannels.sms}
-                      onChange={(e) =>
-                        setAlertPrefChannels({ ...alertPrefChannels, sms: e.target.checked })
-                      }
-                      className="rounded text-[#1B4332] focus:ring-[#1B4332]"
-                    />
-                    <span>Urgent SMS Alerts (+251 Ethio Telecom)</span>
-                  </label>
-                  <label className="flex items-center gap-2 text-[#16201B] cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={alertPrefChannels.telegram}
-                      onChange={(e) =>
-                        setAlertPrefChannels({ ...alertPrefChannels, telegram: e.target.checked })
-                      }
-                      className="rounded text-[#1B4332] focus:ring-[#1B4332]"
-                    />
-                    <span>Instant Telegram Bot Push (@BidEthiopiaBot)</span>
-                  </label>
+                  <p className="text-[11px] text-[#6E695F]">
+                    SMS and Telegram are not enabled yet. Use email digest and Android app push.
+                  </p>
                 </div>
 
                 <div className="pt-2 border-t border-[#F0ECE1] space-y-2">
@@ -3380,75 +2872,56 @@ export default function BidEthiopiaPortal() {
             <section className="space-y-1.5 border-b border-[#E5DFD5] pb-5">
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-bold tracking-widest uppercase text-[#6E695F]">
-                  OFFICIAL PROCEDURAL GUIDE · ETHIOPIAN DISPOSAL REGULATIONS
+                  HOW FANOS TENDER WORKS
                 </span>
                 <span className="size-1 rounded-full bg-[#1B4332]" />
-                <span className="text-[11px] font-medium text-[#6E695F]">
-                  UPDATED 2026 EAT
-                </span>
+                <span className="text-[11px] font-medium text-[#6E695F]">EAT deadlines</span>
               </div>
               <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#16201B]">
-                Tender Guidelines & Bidding Procedures
+                Guidelines for using this directory
               </h1>
               <p className="text-sm text-[#6E695F] max-w-2xl">
-                Comprehensive statutory requirements, banking CPO protocols, and vehicle inspection gate rules for participating in Ethiopian public vehicle tenders.
+                Practical guidance for browsing notices on Fanos Tender. Issuer documents always control. This page is not legal advice and does not replace each notice’s rules.
               </p>
             </section>
 
-            {/* Quick Stats Banner */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="rounded-xl bg-white border border-[#E5DFD5] p-4 shadow-xs">
-                <span className="text-[11px] text-[#6E695F] font-semibold block uppercase tracking-wide">
-                  1. Payment Security
-                </span>
-                <strong className="text-base text-[#1B4332] font-bold block mt-0.5">
-                  Standard CPO Deposit Required
-                </strong>
+                <span className="text-[11px] text-[#6E695F] font-semibold block uppercase tracking-wide">1. Directory only</span>
+                <strong className="text-base text-[#1B4332] font-bold block mt-0.5">Bid with the issuer</strong>
                 <p className="text-[11px] text-[#6E695F] mt-1">
-                  Cash or private cheques strictly prohibited by Federal Public Procurement Directive.
+                  Find notices here, then follow the issuer’s published instructions. Sealed bids and CPOs are not submitted on this website.
                 </p>
               </div>
               <div className="rounded-xl bg-white border border-[#E5DFD5] p-4 shadow-xs">
-                <span className="text-[11px] text-[#6E695F] font-semibold block uppercase tracking-wide">
-                  2. Submission Rule
-                </span>
-                <strong className="text-base text-[#1B4332] font-bold block mt-0.5">
-                  Double-Envelope System
-                </strong>
+                <span className="text-[11px] text-[#6E695F] font-semibold block uppercase tracking-wide">2. Deadlines</span>
+                <strong className="text-base text-[#1B4332] font-bold block mt-0.5">East Africa Time (EAT)</strong>
                 <p className="text-[11px] text-[#6E695F] mt-1">
-                  Technical eligibility CPO envelope and financial offer sealed separately.
+                  Closing times shown in the directory use EAT. Confirm the issuer’s exact cutoff on the original notice.
                 </p>
               </div>
               <div className="rounded-xl bg-white border border-[#E5DFD5] p-4 shadow-xs">
-                <span className="text-[11px] text-[#6E695F] font-semibold block uppercase tracking-wide">
-                  3. Deadline Standard
-                </span>
-                <strong className="text-base text-[#1B4332] font-bold block mt-0.5">
-                  East Africa Time (EAT)
-                </strong>
+                <span className="text-[11px] text-[#6E695F] font-semibold block uppercase tracking-wide">3. Paid details</span>
+                <strong className="text-base text-[#1B4332] font-bold block mt-0.5">Subscription unlock</strong>
                 <p className="text-[11px] text-[#6E695F] mt-1">
-                  Tender boxes sealed promptly at stated minute. Late bids rejected immediately.
+                  Some bidding instructions and extra vehicle photos unlock after a verified bank payment reference.
                 </p>
               </div>
             </div>
 
-            {/* Procedural Guide Sections */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white border border-[#E5DFD5] rounded-xl p-5 shadow-xs space-y-3">
                 <div className="flex items-center gap-2 border-b border-[#F0ECE1] pb-3">
                   <div className="p-1.5 rounded-lg bg-[#EAF7EE] text-[#1B4332]">
                     <ShieldCheck className="size-4" />
                   </div>
-                  <h2 className="text-sm font-bold text-[#16201B]">
-                    1. Bidder Eligibility & Legal Documentation
-                  </h2>
+                  <h2 className="text-sm font-bold text-[#16201B]">Before you bid with an issuer</h2>
                 </div>
                 <ul className="list-disc list-inside text-xs text-[#6E695F] space-y-1.5 pl-1">
-                  <li>Renewed Trade License for current Ethiopian fiscal year.</li>
-                  <li>Taxpayer Identification Number (TIN) Certificate from ERCA.</li>
-                  <li>VAT Registration Certificate (if aggregate bid exceeds threshold).</li>
-                  <li>Notarized Power of Attorney if representative submits bid.</li>
-                  <li>Valid Ethiopian National ID (Fayda / Kebele) or Passport.</li>
+                  <li>Read the full notice text and any corrigenda from the issuer.</li>
+                  <li>Confirm eligibility, documents, bid security, and submission place with the issuer.</li>
+                  <li>For vehicles, use listed inspection windows and authorized photo sets as a preview only.</li>
+                  <li>Treat directory summaries as a starting point—not a substitute for the original notice.</li>
                 </ul>
               </div>
 
@@ -3457,16 +2930,28 @@ export default function BidEthiopiaPortal() {
                   <div className="p-1.5 rounded-lg bg-[#EAF7EE] text-[#1B4332]">
                     <Building2 className="size-4" />
                   </div>
-                  <h2 className="text-sm font-bold text-[#16201B]">
-                    2. Certified Payment Order (CPO) Rules
-                  </h2>
+                  <h2 className="text-sm font-bold text-[#16201B]">Subscriptions on Fanos Tender</h2>
                 </div>
                 <ul className="list-disc list-inside text-xs text-[#6E695F] space-y-1.5 pl-1">
-                  <li>Must be issued by Commercial Bank of Ethiopia (CBE) or authorized commercial banks.</li>
-                  <li>Payable explicitly to the exact legal name of the disposing authority.</li>
-                  <li>Must remain valid for at least 90 calendar days beyond the bid closure date.</li>
-                  <li>CPOs for unsuccessful bidders are returned within 14 working days.</li>
+                  <li>Sign in with email one-time code.</li>
+                  <li>Transfer using the published bank instructions, then submit your reference in Profile.</li>
+                  <li>Access unlocks after the operator verifies the reference.</li>
+                  <li>Subscription fees pay for directory access—not for a bid, CPO, or contract award.</li>
                 </ul>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-[#E5DFD5] bg-[#FAF8F5] p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <p className="text-xs text-[#6E695F] max-w-xl">
+                Binding rules for using the Service are in our legal pages.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <a href="/terms" className="inline-flex items-center rounded-lg bg-[#1B4332] px-3 py-2 text-xs font-bold text-white hover:bg-[#2D6A4F]">
+                  Terms of Use
+                </a>
+                <a href="/privacy" className="inline-flex items-center rounded-lg border border-[#1B4332] px-3 py-2 text-xs font-bold text-[#1B4332] hover:bg-[#EAF7EE]">
+                  Privacy Policy
+                </a>
               </div>
             </div>
           </div>
@@ -3492,52 +2977,98 @@ export default function BidEthiopiaPortal() {
                 <div className="space-y-0.5">
                   <h2 className="text-lg font-bold text-[#16201B]">{currentUser.name}</h2>
                   <p className="text-xs text-[#6E695F]">{currentUser.email}</p>
-                  <span className="inline-block mt-1 rounded bg-[#D8F3DC] px-2 py-0.5 text-[11px] font-bold text-[#1B4332]">
-                    Active Enterprise Subscriber
+                  <span className={`inline-block mt-1 rounded px-2 py-0.5 text-[11px] font-bold ${
+                    currentUser.isAdmin
+                      ? 'bg-[#1B4332] text-white'
+                      : isSubscriberUnlocked
+                        ? 'bg-[#D8F3DC] text-[#1B4332]'
+                        : 'bg-[#F0ECE1] text-[#635E53]'
+                  }`}>
+                    {currentUser.isAdmin ? 'Superadmin' : isSubscriberUnlocked ? 'Active subscriber' : 'Free account'}
                   </span>
                 </div>
               </div>
 
+              {currentUser.isAdmin && (
+                <div className="rounded-xl border border-[#1B4332] bg-[#EAF7EE] p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="size-9 rounded-lg bg-[#1B4332] text-white flex items-center justify-center shrink-0">
+                      <ShieldCheck className="size-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-[#16201B]">Superadmin console</h4>
+                      <p className="text-[11px] text-[#6E695F] mt-0.5">
+                        Post tenders and vehicle lots, upload photos, set subscription prices and bank instructions, and approve payment references.
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href="/?screen=staff"
+                    className="inline-flex items-center justify-center gap-1.5 w-full rounded-lg bg-[#1B4332] px-3 py-2.5 text-xs font-bold text-white hover:bg-[#2D6A4F]"
+                  >
+                    Open Superadmin console
+                    <ArrowRight className="size-3.5" />
+                  </a>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4 text-xs">
                 <div className="p-3 rounded-lg bg-[#FAF8F5] border border-[#EFECE6]">
-                  <span className="text-[#6E695F] block text-[11px]">Organization / Company</span>
-                  <strong className="text-[#16201B] font-semibold">{currentUser.organization}</strong>
+                  <span className="text-[#6E695F] block text-[11px]">Account email</span>
+                  <strong className="text-[#16201B] font-semibold">{currentUser.email}</strong>
                 </div>
                 <div className="p-3 rounded-lg bg-[#FAF8F5] border border-[#EFECE6]">
-                  <span className="text-[#6E695F] block text-[11px]">TIN Number (ERCA)</span>
-                  <strong className="text-[#16201B] font-semibold">{currentUser.tin}</strong>
-                </div>
-                <div className="p-3 rounded-lg bg-[#FAF8F5] border border-[#EFECE6]">
-                  <span className="text-[#6E695F] block text-[11px]">Registered Mobile</span>
-                  <strong className="text-[#16201B] font-semibold">{currentUser.phone}</strong>
-                </div>
-                <div className="p-3 rounded-lg bg-[#FAF8F5] border border-[#EFECE6]">
-                  <span className="text-[#6E695F] block text-[11px]">Subscription Expiry</span>
-                  <strong className="text-[#1B4332] font-semibold">31 Dec 2026 (Renewed)</strong>
+                  <span className="text-[#6E695F] block text-[11px]">Access</span>
+                  <strong className="text-[#16201B] font-semibold">
+                    {currentUser.isAdmin ? 'Full directory management' : isSubscriberUnlocked ? 'Paid notices unlocked' : 'Public notices only'}
+                  </strong>
                 </div>
               </div>
 
-              {/* Subscriber Toggle Helper for Testing */}
-              <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-bold text-[#16201B]">Simulation Access Switch</h4>
-                  <p className="text-[11px] text-[#6E695F]">
-                    Toggle between Subscriber and Guest mode to test gating behaviors.
-                  </p>
+              <div className="space-y-3 border-t border-[#F0ECE1] pt-4">
+                <h4 className="text-xs font-bold text-[#16201B]">Submit bank payment reference</h4>
+                <p className="text-[11px] text-[#6E695F]">
+                  Transfer using the published bank instructions, then submit your reference for staff approval.
+                </p>
+                {plans?.instructions ? (
+                  <p className="text-[11px] whitespace-pre-wrap rounded-lg bg-[#FAF8F5] border border-[#EFECE6] p-3 text-[#16201B]">{plans.instructions}</p>
+                ) : null}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <select
+                    value={paymentTerm}
+                    onChange={(e) => setPaymentTerm(e.target.value)}
+                    className="rounded-lg border border-[#E5DFD5] bg-[#FAF8F5] px-3 py-2 text-xs"
+                  >
+                    {(plans?.plans || [{ months: 1 }, { months: 3 }, { months: 6 }, { months: 12 }]).map((plan: any) => (
+                      <option key={plan.months} value={String(plan.months)}>
+                        {plan.months} month{plan.months > 1 ? 's' : ''}{plan.price ? ` · ${plan.price} ETB` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={paymentReference}
+                    onChange={(e) => setPaymentReference(e.target.value)}
+                    placeholder="Bank reference"
+                    className="flex-1 rounded-lg border border-[#E5DFD5] bg-[#FAF8F5] px-3 py-2 text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void submitPaymentReference()}
+                    className="rounded-lg bg-[#1B4332] px-3 py-2 text-xs font-bold text-white hover:bg-[#2D6A4F]"
+                  >
+                    Submit
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    setIsSubscriberUnlocked(!isSubscriberUnlocked)
-                    showToast(
-                      !isSubscriberUnlocked
-                        ? 'Switched to Subscriber view.'
-                        : 'Switched to Public Guest view.'
-                    )
-                  }}
-                  className="px-3 py-1.5 rounded-lg border border-[#1B4332] text-xs font-bold text-[#1B4332] hover:bg-[#EAF7EE]"
-                >
-                  {isSubscriberUnlocked ? 'Test as Guest' : 'Test as Subscriber'}
-                </button>
+                {payments.length > 0 && (
+                  <ul className="space-y-1.5 text-[11px] text-[#6E695F]">
+                    {payments.slice(0, 5).map((payment) => (
+                      <li key={payment.id} className="flex justify-between gap-2 border-b border-[#F0ECE1] py-1">
+                        <span>{payment.reference}</span>
+                        <span className="font-semibold text-[#16201B]">{payment.status} · {payment.months} mo</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
 
               <div className="pt-2 border-t border-[#F0ECE1] flex items-center justify-between">
@@ -3560,14 +3091,14 @@ export default function BidEthiopiaPortal() {
         )}
 
         {/* ============================================================== */}
-        {/* MODAL 1: DEMO EMAIL-CODE LOGIN (Matches Stitch Android Scope)   */}
+        {/* MODAL 1: EMAIL OTP LOGIN */}
         {/* ============================================================== */}
         {isLoginModalOpen && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in"
             role="dialog"
             aria-modal="true"
-            aria-label="Demo Email-Code Sign In"
+            aria-label="Email sign in"
           >
             <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-[#E5DFD5] p-6 sm:p-7 space-y-5">
               <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3">
@@ -3577,10 +3108,10 @@ export default function BidEthiopiaPortal() {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-[#16201B]">
-                      {loginStep === 'email' ? 'Demo Email Sign In' : 'Enter 6-Digit Code'}
+                      {loginStep === 'email' ? 'Email sign in' : 'Enter 6-Digit Code'}
                     </h3>
                     <p className="text-[11px] text-[#6E695F]">
-                      Simulated passwordless authentication
+                      Email one-time code
                     </p>
                   </div>
                 </div>
@@ -3615,30 +3146,25 @@ export default function BidEthiopiaPortal() {
                     />
                   </div>
 
-                  {/* One-click demo helper */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginEmail('abebe.k@ethiopia-trade.et')
-                    }}
-                    className="w-full text-left p-2.5 rounded-lg bg-[#FAF8F5] border border-[#EFECE6] text-xs text-[#1B4332] hover:bg-[#EAF7EE] transition flex items-center justify-between"
-                  >
-                    <span>Click to autofill Ethiopian Enterprise demo email</span>
-                    <Sparkles className="size-3.5 text-[#E0B263]" />
-                  </button>
-
+                  <p className="text-[11px] text-[#6E695F] leading-relaxed">
+                    By continuing you agree to the{' '}
+                    <a href="/terms" className="font-semibold text-[#1B4332] underline" target="_blank" rel="noreferrer">Terms of Use</a>
+                    {' '}and{' '}
+                    <a href="/privacy" className="font-semibold text-[#1B4332] underline" target="_blank" rel="noreferrer">Privacy Policy</a>.
+                  </p>
                   <button
                     type="submit"
-                    className="w-full py-2.5 rounded-lg bg-[#1B4332] text-white text-xs font-bold hover:bg-[#2D6A4F] transition shadow-xs flex items-center justify-center gap-1.5"
+                    disabled={loginBusy}
+                    className="w-full py-2.5 rounded-lg bg-[#1B4332] text-white text-xs font-bold hover:bg-[#2D6A4F] transition shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-60"
                   >
-                    <span>Send 6-Digit Code</span>
+                    <span>{loginBusy ? 'Sending…' : 'Send 6-Digit Code'}</span>
                     <Send className="size-3.5" />
                   </button>
                 </form>
               ) : (
                 <form onSubmit={handleVerifyCode} className="space-y-4">
                   <p className="text-xs text-[#6E695F]">
-                    We sent a simulated 6-digit confirmation code to{' '}
+                    We sent a 6-digit confirmation code to{' '}
                     <strong className="text-[#16201B]">{loginEmail}</strong>.
                   </p>
 
@@ -3648,7 +3174,9 @@ export default function BidEthiopiaPortal() {
                     </label>
                     <input
                       type="text"
-                      placeholder="849201"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      placeholder="000000"
                       value={loginCode}
                       onChange={(e) => setLoginCode(e.target.value)}
                       className="w-full px-3 py-2.5 text-center font-mono tracking-widest text-lg font-bold rounded-lg border border-[#E5DFD5] bg-[#FAF8F5] text-[#16201B] focus:outline-hidden focus:border-[#1B4332]"
@@ -3657,20 +3185,12 @@ export default function BidEthiopiaPortal() {
                     />
                   </div>
 
-                  {/* Quick autofill code */}
-                  <button
-                    type="button"
-                    onClick={() => setLoginCode('849201')}
-                    className="w-full text-center text-xs text-[#1B4332] font-semibold hover:underline"
-                  >
-                    Click to autofill demo code: 849201
-                  </button>
-
                   <button
                     type="submit"
-                    className="w-full py-2.5 rounded-lg bg-[#1B4332] text-white text-xs font-bold hover:bg-[#2D6A4F] transition shadow-xs"
+                    disabled={loginBusy}
+                    className="w-full py-2.5 rounded-lg bg-[#1B4332] text-white text-xs font-bold hover:bg-[#2D6A4F] transition shadow-xs disabled:opacity-60"
                   >
-                    Verify & Sign In as Subscriber
+                    {loginBusy ? 'Verifying…' : 'Verify & sign in'}
                   </button>
                 </form>
               )}
@@ -3754,13 +3274,12 @@ export default function BidEthiopiaPortal() {
               <div className="flex items-center justify-between gap-3 pt-2">
                 <button
                   onClick={() => {
-                    showToast('Official Gazette Document sent to browser print preview.')
-                    setActiveNoticeModal(null)
+                    window.print()
                   }}
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#E5DFD5] bg-[#FAF8F5] text-xs font-semibold text-[#1B4332] hover:bg-[#EAF7EE] transition"
                 >
                   <Printer className="size-3.5" />
-                  <span>Print Official Gazette Notice</span>
+                  <span>Print notice</span>
                 </button>
                 <button
                   onClick={() => setActiveNoticeModal(null)}
@@ -3774,7 +3293,7 @@ export default function BidEthiopiaPortal() {
         )}
         {!selectedVehicle && !selectedTender && activeTab === 'home' && (
           <div className="[--green:#1B4332] [--paper:#FAF8F5] [--line:#E5DFD5] [--mint:#EAF7EE]">
-            <HomePricing plans={null} onSelect={(months: number) => window.location.assign('/?screen=plans&term=' + months)} />
+            <HomePricing plans={plans} onSelect={(months: number) => { setPaymentTerm(String(months)); navigateTo('profile'); if (!currentUser) setIsLoginModalOpen(true); else showToast('Submit your bank reference from Profile after transfer.'); }} />
           </div>
         )}
       </main>
@@ -3782,15 +3301,16 @@ export default function BidEthiopiaPortal() {
       {/* Footer */}
       <footer className="mt-auto border-t border-[#E5DFD5] bg-[#FFFFFF] px-4 sm:px-6 lg:px-8 py-5 text-xs text-[#6E695F]">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
             <span className="font-bold text-[#16201B]">Fanos Tender</span>
-            <span>·</span>
-            <span>Stitch Android Desktop Port · All Data Fictional</span>
+            <span className="hidden sm:inline">·</span>
+            <span>Bid with the issuer — not on this site</span>
           </div>
-          <div className="flex items-center gap-4 text-[11px]">
-            <span>All Deadlines in East Africa Time (EAT, UTC+3)</span>
-            <span>·</span>
-            <span>Local Browser Storage Active</span>
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-3 gap-y-1 text-[11px]">
+            <a href="/terms" className="font-semibold text-[#1B4332] hover:underline">Terms of Use</a>
+            <a href="/privacy" className="font-semibold text-[#1B4332] hover:underline">Privacy</a>
+            <button type="button" onClick={() => navigateTo('guidelines')} className="font-semibold text-[#1B4332] hover:underline">Guidelines</button>
+            <span>Deadlines in EAT (UTC+3)</span>
           </div>
         </div>
       </footer>

@@ -2,20 +2,26 @@
   "expo": {
     "name": "Fanos Tender",
     "icon": "./assets/fanos-tender-icon.png",
-    "slug": "bid-ethiopia",
-    "scheme": "bidethiopia",
+    "slug": "fanos-tender",
+    "scheme": "fanostender",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
-      "bundleIdentifier": "com.bidethiopia.app",
+      "bundleIdentifier": "com.fanostender.app",
       "supportsTablet": true
     },
     "android": {
-      "package": "com.bidethiopia.app"
+      "package": "com.fanostender.app"
     },
     "plugins": [
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/fanos-tender-icon.png",
+          "color": "#1B4332"
+        }
+      ],
       "expo-secure-store"
     ]
   }
