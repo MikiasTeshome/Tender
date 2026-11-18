@@ -22,9 +22,6 @@ export default function AuthPanel({onSuccess, compact = false}) {
     setMessage('');
     try {
       const user = await action();
-      if (user && !user.emailVerified && mode === 'register') {
-        setMessage('Account created. Verify your email if prompted, then continue.');
-      }
       onSuccess?.(user);
     } catch (error) {
       setMessage(error.message || 'Sign-in failed.');

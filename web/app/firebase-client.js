@@ -37,28 +37,40 @@ export function watchAuth(callback) {
     callback(null);
     return () => {};
   }
-  return onAuthStateChanged(auth, callback);
+  return onAuthStateChanged(auth, (user) => callback(user?.emailVerified ? user : null));
 }
 
 export async function getIdToken(forceRefresh = false) {
   const auth = getFirebaseAuth();
   const user = auth?.currentUser;
-  if (!user) return null;
+  if (!user?.emailVerified) return null;
   return user.getIdToken(forceRefresh);
+}
+
+async function requireVerifiedEmail(auth, user) {
+  if (user.emailVerified) return user;
+  try {
+    await sendEmailVerification(user);
+  } catch {
+    throw new Error('Your email still needs verification. Check your inbox for an existing link or try signing in again later.');
+  } finally {
+    await firebaseSignOut(auth);
+  }
+  throw new Error('We sent a verification link to your email. Open it, then sign in again.');
 }
 
 export async function signInWithGoogle() {
   const auth = getFirebaseAuth();
   if (!auth) throw new Error('Firebase Auth is not configured.');
   const result = await signInWithPopup(auth, new GoogleAuthProvider());
-  return result.user;
+  return requireVerifiedEmail(auth, result.user);
 }
 
 export async function signInWithEmail(email, password) {
   const auth = getFirebaseAuth();
   if (!auth) throw new Error('Firebase Auth is not configured.');
   const result = await signInWithEmailAndPassword(auth, email.trim(), password);
-  return result.user;
+  return requireVerifiedEmail(auth, result.user);
 }
 
 export async function registerWithEmail(email, password, displayName = '') {
@@ -66,10 +78,7 @@ export async function registerWithEmail(email, password, displayName = '') {
   if (!auth) throw new Error('Firebase Auth is not configured.');
   const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
   if (displayName.trim()) await updateProfile(result.user, {displayName: displayName.trim()});
-  if (!result.user.emailVerified) {
-    await sendEmailVerification(result.user).catch(() => {});
-  }
-  return result.user;
+  return requireVerifiedEmail(auth, result.user);
 }
 
 export async function signOutAuth() {

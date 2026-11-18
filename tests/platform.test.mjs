@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
-import { handle } from '../lib/api.mjs';
+import { handle, identify } from '../lib/api.mjs';
 import { ingest, importApprovedFeed } from '../lib/import.mjs';
 import { deliverAlerts, queueAlerts } from '../lib/notifications.mjs';
 
@@ -21,17 +21,33 @@ async function setup(t) {
     return {...result,rowCount:result.affectedRows || result.rows.length};
   };
   const db = {query,connect:async () => ({query,release(){}})};
-  const identify = (id) => ({id,email:id === staff ? 'staff@example.com' : 'supplier@example.com',email_confirmed_at:future(-1)});
+  const authenticate = (token) => identify(token, {
+    async verifyIdToken(uid, checkRevoked) {
+      assert.equal(checkRevoked,true);
+      return {uid,email:uid === staff ? 'staff@example.com' : 'supplier@example.com',email_verified:uid === staff || uid === supplier};
+    },
+  });
   async function api(path,{method='GET',body,user,status=200}={}) {
     const headers = new Headers(user ? {Authorization:'Bearer ' + user} : {});
     if (body && !(body instanceof FormData)) headers.set('Content-Type','application/json');
     const request = new Request('http://localhost/api/' + path,{method,headers,body:body instanceof FormData ? body : body && JSON.stringify(body)});
-    const response = await handle(db,request,path.split('?')[0].split('/'),identify);
+    const response = await handle(db,request,path.split('?')[0].split('/'),authenticate);
     assert.equal(response.status,status,await response.clone().text());
     return response.headers.get('content-type')?.startsWith('image/') ? response : response.json();
   }
   return {db,api};
 }
+
+test('only verified Firebase accounts can access account endpoints',async (t) => {
+  const {db,api} = await setup(t);
+  await api('me',{user:'unverified-user',status:401});
+  const {rows} = await db.query('SELECT id FROM accounts WHERE id=$1',['unverified-user']);
+  assert.equal(rows.length,0);
+  assert.equal((await api('me',{user:staff})).admin,true);
+  const free = await api('me',{user:supplier});
+  assert.equal(free.admin,false);
+  assert.equal(free.subscribed,false);
+});
 
 function form(overrides = {},photoCount = 0,authorized = true) {
   const data = new FormData();

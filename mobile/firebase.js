@@ -6,6 +6,7 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   signOut,
   GoogleAuthProvider,
   signInWithCredential,
@@ -47,26 +48,41 @@ export function watchAuth(callback) {
     callback(null);
     return () => {};
   }
-  return onAuthStateChanged(auth, callback);
+  return onAuthStateChanged(auth, (user) => callback(user?.emailVerified ? user : null));
+}
+
+async function requireVerifiedEmail(auth, user) {
+  if (user.emailVerified) return user;
+  try {
+    await sendEmailVerification(user);
+  } catch {
+    throw new Error('Your email still needs verification. Check your inbox for an existing link or try signing in again later.');
+  } finally {
+    await signOut(auth);
+  }
+  throw new Error('We sent a verification link to your email. Open it, then sign in again.');
 }
 
 export async function signInEmail(email, password) {
   const auth = getFirebaseAuth();
   if (!auth) throw new Error('Firebase Auth is not configured.');
-  return (await signInWithEmailAndPassword(auth, email.trim(), password)).user;
+  const {user} = await signInWithEmailAndPassword(auth, email.trim(), password);
+  return requireVerifiedEmail(auth, user);
 }
 
 export async function registerEmail(email, password) {
   const auth = getFirebaseAuth();
   if (!auth) throw new Error('Firebase Auth is not configured.');
-  return (await createUserWithEmailAndPassword(auth, email.trim(), password)).user;
+  const {user} = await createUserWithEmailAndPassword(auth, email.trim(), password);
+  return requireVerifiedEmail(auth, user);
 }
 
 export async function signInGoogleIdToken(idToken) {
   const auth = getFirebaseAuth();
   if (!auth) throw new Error('Firebase Auth is not configured.');
   const credential = GoogleAuthProvider.credential(idToken);
-  return (await signInWithCredential(auth, credential)).user;
+  const {user} = await signInWithCredential(auth, credential);
+  return requireVerifiedEmail(auth, user);
 }
 
 export async function signOutAuth() {
