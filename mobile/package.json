@@ -8,14 +8,17 @@
     "ios": "expo start --ios"
   },
   "dependencies": {
-    "expo": "~54.0.0",
-    "react": "19.1.0",
-    "react-native": "0.81.5",
     "@expo/vector-icons": "^15.0.2",
+    "@react-native-async-storage/async-storage": "^3.1.1",
+    "expo": "~54.0.0",
+    "expo-auth-session": "^58.0.19",
+    "expo-crypto": "^58.0.8",
     "expo-notifications": "~0.32.0",
     "expo-secure-store": "~15.0.0",
-    "@supabase/supabase-js": "^2.89.0",
+    "expo-web-browser": "^58.1.0",
+    "firebase": "^13.4.0",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
     "react-native-url-polyfill": "^2.0.0"
   }
 }
-

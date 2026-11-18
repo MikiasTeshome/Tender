@@ -29,7 +29,7 @@ export default function TermsPage() {
       </ul>
 
       <h2>3. Accounts</h2>
-      <p>Accounts use email one-time codes. You must provide a valid email address you control and keep access to that inbox secure. You are responsible for activity under your account. Notify us promptly if you believe your account was used without permission.</p>
+      <p>Accounts use Firebase Authentication. You may sign in with Google or with email and password. You must use an email address you control and keep your credentials secure. You are responsible for activity under your account. Notify us promptly if you believe your account was used without permission.</p>
 
       <h2>4. Subscriptions and payments</h2>
       <p>

@@ -26,21 +26,21 @@ CREATE TABLE IF NOT EXISTS photos (
   UNIQUE(listing_id,position)
 );
 CREATE TABLE IF NOT EXISTS accounts (
-  id uuid PRIMARY KEY,
+  id text PRIMARY KEY,
   email text NOT NULL,
   expires_at timestamptz,
   email_alerts boolean NOT NULL DEFAULT false,
   push_token text UNIQUE
 );
-CREATE TABLE IF NOT EXISTS admins (id uuid PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS admins (id text PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS saved (
-  account_id uuid REFERENCES accounts(id),
+  account_id text REFERENCES accounts(id),
   listing_id uuid REFERENCES listings(id),
   PRIMARY KEY(account_id,listing_id)
 );
 CREATE TABLE IF NOT EXISTS searches (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  account_id uuid NOT NULL REFERENCES accounts(id),
+  account_id text NOT NULL REFERENCES accounts(id),
   label text NOT NULL,
   filters jsonb NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
@@ -53,7 +53,7 @@ INSERT INTO plans(months) VALUES (1),(3),(6),(12) ON CONFLICT DO NOTHING;
 CREATE TABLE IF NOT EXISTS settings (key text PRIMARY KEY, value text NOT NULL);
 CREATE TABLE IF NOT EXISTS payments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  account_id uuid NOT NULL REFERENCES accounts(id),
+  account_id text NOT NULL REFERENCES accounts(id),
   reference text NOT NULL UNIQUE,
   months int NOT NULL REFERENCES plans(months),
   price numeric(12,2) NOT NULL,
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 CREATE TABLE IF NOT EXISTS audit (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  actor uuid,
+  actor text,
   action text NOT NULL,
   subject text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE TABLE IF NOT EXISTS deliveries (
   key text PRIMARY KEY,
-  account_id uuid NOT NULL REFERENCES accounts(id),
+  account_id text NOT NULL REFERENCES accounts(id),
   channel text NOT NULL,
   listing_ids uuid[] NOT NULL,
   message text NOT NULL,

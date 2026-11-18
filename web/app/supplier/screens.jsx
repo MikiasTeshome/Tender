@@ -1,6 +1,8 @@
 ﻿'use client';
 
 import Brand from '../brand.jsx';
+import AuthPanel from '../AuthPanel.jsx';
+import '../auth-panel.css';
 
 import { useState } from 'react';
 import { Icon, sectionIcons } from '../stitch-ui.jsx';
@@ -344,36 +346,12 @@ export function ProfileScreen({me, language, onLanguage, onSignIn, onSignOut, on
     </div>
     <div className="info-box">
       <Icon name="info" size={16} />
-      <p>Fanos Tender is an informational directory. Configure Supabase for sign-in and payment references if they are not available yet.</p>
+      <p>Fanos Tender is an informational directory. Sign in with Google or email to sync saved lots and submit payment references.</p>
     </div>
   </section>;
 }
 
-export function AuthScreen({client, onBack}) {
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [sent, setSent] = useState(false);
-  const [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  async function submit(event) {
-    event.preventDefault();
-    if (!client) return;
-    setBusy(true);
-    try {
-      const {error} = sent
-        ? await client.auth.verifyOtp({email, token: code, type: 'email'})
-        : await client.auth.signInWithOtp({email});
-      if (error) throw error;
-      setSent(true);
-      setMessage('Check your inbox for your sign-in code.');
-    } catch (error) {
-      setMessage(errorText(error));
-    } finally {
-      setBusy(false);
-    }
-  }
-
+export function AuthScreen({onBack, onSuccess}) {
   return <section className="stitch-auth">
     <div className="stitch-subnav">
       <button type="button" className="text-back" onClick={onBack}><Icon name="back" size={18} /> Back to Profile</button>
@@ -381,49 +359,15 @@ export function AuthScreen({client, onBack}) {
     <div className="auth-hero">
       <div className="auth-gavel"><Icon name="gavel" size={28} /></div>
       <h1>Sign in to Fanos Tender</h1>
-      <p>Access official tenders, saved motor auctions, verified bank deposits, and critical closing alerts across your field devices.</p>
+      <p>Use Google or email and password to access saved lots, subscriptions, and alerts.</p>
     </div>
-    {!client ? (
-      <div className="auth-notice" role="status">
-        <Icon name="info" size={18} />
-        <div>
-          <strong>Sign-in is not configured</strong>
-          <p>Supabase auth is not available on this deployment. Configure auth URL and key to enable email one-time codes.</p>
-        </div>
-      </div>
-    ) : (
-      <form className="auth-card" onSubmit={submit}>
-        <div className="auth-steps" aria-hidden="true">
-          <span className={'step' + (!sent ? ' on' : '')}><i>1</i>Tenderer Email</span>
-          <span className="step-line" />
-          <span className={'step' + (sent ? ' on' : '')}><i>2</i>Code Clearance</span>
-        </div>
-        {!sent ? <>
-          <div className="field-head"><label htmlFor="proc-email">Official Procurement Email</label><span>Field Account</span></div>
-          <div className="mail-input">
-            <Icon name="mail" size={18} />
-            <input id="proc-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@organization.et" />
-          </div>
-          <p className="field-hint">We will issue a one-time 6-digit access token for registered Ethiopian bidders.</p>
-          <button className="primary wide" disabled={busy}>Send Code <Icon name="arrow" size={18} /></button>
-        </> : <>
-          <label htmlFor="otp-code">Code Clearance
-            <input id="otp-code" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={(e) => setCode(e.target.value)} />
-          </label>
-          <button className="primary wide" disabled={busy}>Verify Code</button>
-          <button type="button" className="ghost" onClick={() => {setSent(false); setMessage('');}}>Tenderer Email</button>
-        </>}
-        {message && <p role="status">{message}</p>}
-      </form>
-    )}
+    <div className="auth-card">
+      <AuthPanel onSuccess={onSuccess} />
+    </div>
     <div className="trust-row">
-      <span><Icon name="lock" size={14} /> End-to-End Encrypted</span>
-      <span><Icon name="shield" size={14} /> Federal Gazette Compliant</span>
+      <span><Icon name="lock" size={14} /> Secured sign-in</span>
+      <span><Icon name="shield" size={14} /> Bid with the issuer</span>
     </div>
-    <p className="legal-note">
-      By continuing you agree to the <a href="/terms">Terms of Use</a> and <a href="/privacy">Privacy Policy</a>.
-      Bid with the issuer — not on this site.
-    </p>
   </section>;
 }
 

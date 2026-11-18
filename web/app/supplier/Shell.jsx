@@ -1,8 +1,8 @@
 ﻿'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import Admin from '../staff.jsx';
+import { getIdToken, signOutAuth, watchAuth } from '../firebase-client.js';
 import { Dock, SiteFooter } from './components.jsx';
 import { DeskCatalog, DeskDetail, DeskHeader, DeskHome, DeskSaved } from './desktop.jsx';
 import {
@@ -21,9 +21,8 @@ import './supplier.css';
 
 const emptyFilters = {q: '', section: '', condition: ''};
 
-export default function Shell({authUrl = '', authKey = ''}) {
-  const client = useMemo(() => (authUrl && authKey ? createClient(authUrl, authKey) : null), [authUrl, authKey]);
-  const [session, setSession] = useState(null);
+export default function Shell() {
+  const [accessToken, setAccessToken] = useState(null);
   const [me, setMe] = useState(null);
   const [route, setRoute] = useState({bid: '', screen: 'home', section: ''});
   const [filters, setFilters] = useState(emptyFilters);
@@ -43,12 +42,12 @@ export default function Shell({authUrl = '', authKey = ''}) {
   const [allItems, setAllItems] = useState([]);
   const mode = useViewportMode();
 
-  const accessToken = session?.access_token;
   const account = me;
   const api = useCallback(async (path, options = {}) => {
     const {data, binary, ...init} = options;
     const headers = new Headers(init.headers);
-    if (accessToken) headers.set('Authorization', 'Bearer ' + accessToken);
+    const token = accessToken || await getIdToken();
+    if (token) headers.set('Authorization', 'Bearer ' + token);
     if (data && !(data instanceof FormData)) headers.set('Content-Type', 'application/json');
     const response = await fetch('/api/' + path, {
       ...init,
@@ -77,11 +76,14 @@ export default function Shell({authUrl = '', authKey = ''}) {
   }, []);
 
   useEffect(() => {
-    if (!client) return;
-    client.auth.getSession().then(({data}) => setSession(data.session));
-    const {data: {subscription}} = client.auth.onAuthStateChange((_event, next) => setSession(next));
-    return () => subscription.unsubscribe();
-  }, [client]);
+    return watchAuth(async (user) => {
+      if (!user) {
+        setAccessToken(null);
+        return;
+      }
+      setAccessToken(await user.getIdToken());
+    });
+  }, []);
 
   useEffect(() => {
     const sync = () => {
@@ -272,9 +274,8 @@ export default function Shell({authUrl = '', authKey = ''}) {
 
   async function handleSignOut() {
     setStatus('');
-    if (client && accessToken) {
-      await client.auth.signOut();
-    }
+    await signOutAuth();
+    setAccessToken(null);
     setMe(null);
     setSaved([]);
     setPayments([]);
@@ -322,7 +323,7 @@ export default function Shell({authUrl = '', authKey = ''}) {
   }
 
   const sharedScreen = screen === 'auth' ? (
-    <AuthScreen client={client} onBack={() => go('profile')} />
+    <AuthScreen onBack={() => go('profile')} onSuccess={() => go('profile')} />
   ) : screen === 'staff' ? (
     staffAllowed
       ? <Admin api={api} onBack={() => go('profile')} />

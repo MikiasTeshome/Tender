@@ -22,7 +22,7 @@ export default function PrivacyPage() {
 
       <h2>2. Data we collect</h2>
       <ul>
-        <li><strong>Account data:</strong> email address; authentication session tokens issued by our auth provider.</li>
+        <li><strong>Account data:</strong> email address; display name if provided; authentication tokens issued by Firebase Authentication (including when you use Google Sign-In).</li>
         <li><strong>Profile and preferences:</strong> email-alert preference; whether a push token is registered.</li>
         <li><strong>Usage related to your account:</strong> saved listings; saved search labels/filters you create; payment references, plan term, amount, and verification status.</li>
         <li><strong>Device notifications (Android):</strong> Expo push token when you enable notifications (delivered via the device push service / FCM).</li>
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
       <h2>4. Processors and sharing</h2>
       <p>We use service providers under contract or equivalent terms to run the Service:</p>
       <ul>
-        <li><strong>Supabase</strong> — email one-time-code authentication;</li>
+        <li><strong>Firebase Authentication / Google</strong> — sign-in and identity tokens;</li>
         <li><strong>Hosting / database</strong> — application and PostgreSQL storage for accounts, listings, payments, and preferences;</li>
         <li><strong>Resend</strong> (when configured) — transactional or alert email delivery;</li>
         <li><strong>Expo / device push services</strong> — delivery of push notifications you enable on Android.</li>

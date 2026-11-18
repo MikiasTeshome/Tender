@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Brand from './brand.jsx'
+import AuthPanel from './AuthPanel.jsx'
+import './auth-panel.css'
+import { signOutAuth, watchAuth } from './firebase-client.js'
 import {
   alertsFromListings,
   createApi,
-  createPortalClient,
   fetchAllListings,
   listingsToPortal,
   mapTender,
@@ -147,7 +149,7 @@ type AlertNotification = {
   targetType?: 'tender' | 'vehicle'
 }
 
-export default function FanosPortal({ authUrl = '', authKey = '' }: { authUrl?: string; authKey?: string }) {
+export default function FanosPortal() {
   // Navigation & View State
   const [activeTab, setActiveTab] = useState<'home' | 'tenders' | 'vehicles' | 'saved' | 'alerts' | 'guidelines' | 'profile'>('home')
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleLot | null>(null)
@@ -178,7 +180,6 @@ export default function FanosPortal({ authUrl = '', authKey = '' }: { authUrl?: 
   const [catalogError, setCatalogError] = useState('')
   const [plans, setPlans] = useState<any>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
-  const [loginBusy, setLoginBusy] = useState(false)
   const [paymentReference, setPaymentReference] = useState('')
   const [paymentTerm, setPaymentTerm] = useState('1')
   const [payments, setPayments] = useState<any[]>([])
@@ -188,13 +189,9 @@ export default function FanosPortal({ authUrl = '', authKey = '' }: { authUrl?: 
   const [savedTenderIds, setSavedTenderIds] = useState<string[]>([])
   const [savedViewFilter, setSavedViewFilter] = useState<'all' | 'vehicles' | 'tenders'>('all')
 
-  // User Profile & OTP Login
+  // User Profile & Firebase Login
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
-  const [loginEmail, setLoginEmail] = useState('')
-  const [loginStep, setLoginStep] = useState<'email' | 'code'>('email')
-  const [loginCode, setLoginCode] = useState('')
-  const [loginError, setLoginError] = useState('')
 
   // Gated Access & Photo Selection
   const [isSubscriberUnlocked, setIsSubscriberUnlocked] = useState(false)
@@ -228,7 +225,6 @@ export default function FanosPortal({ authUrl = '', authKey = '' }: { authUrl?: 
     vehicles: true,
   })
 
-  const client = useMemo(() => createPortalClient(authUrl, authKey), [authUrl, authKey])
   const api = useMemo(() => createApi(() => accessToken), [accessToken])
 
   const showToast = (msg: string) => {
@@ -236,14 +232,14 @@ export default function FanosPortal({ authUrl = '', authKey = '' }: { authUrl?: 
     setTimeout(() => setFeedbackToast(null), 4000)
   }
 
-  const applyAccount = useCallback((me: any, emailFallback = '') => {
+  const applyAccount = useCallback((me: any, emailFallback = '', displayName = '') => {
     if (!me) {
       setCurrentUser(null)
       setIsSubscriberUnlocked(false)
       return
     }
     const profile: UserProfile = {
-      name: me.email?.split('@')[0] || 'Bidder',
+      name: displayName || me.email?.split('@')[0] || 'Bidder',
       email: me.email || emailFallback,
       organization: me.admin ? 'Superadmin' : 'Registered bidder',
       tin: '—',
@@ -302,15 +298,14 @@ export default function FanosPortal({ authUrl = '', authKey = '' }: { authUrl?: 
   }, [api])
 
   useEffect(() => {
-    if (!client) return
-    client.auth.getSession().then(({ data }) => {
-      setAccessToken(data.session?.access_token ?? null)
+    return watchAuth(async (user) => {
+      if (!user) {
+        setAccessToken(null)
+        return
+      }
+      setAccessToken(await user.getIdToken())
     })
-    const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
-      setAccessToken(session?.access_token ?? null)
-    })
-    return () => subscription.unsubscribe()
-  }, [client])
+  }, [])
 
   useEffect(() => {
     void loadCatalog()
@@ -382,65 +377,8 @@ export default function FanosPortal({ authUrl = '', authKey = '' }: { authUrl?: 
     }
   }
 
-  const handleSendCode = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    if (!client) {
-      setLoginError('Email sign-in is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.')
-      return
-    }
-    if (!loginEmail || !loginEmail.includes('@')) {
-      setLoginError('Please enter a valid business or personal email address.')
-      return
-    }
-    setLoginBusy(true)
-    setLoginError('')
-    try {
-      const { error } = await client.auth.signInWithOtp({ email: loginEmail })
-      if (error) throw error
-      setLoginStep('code')
-      showToast('Check your inbox for your sign-in code.')
-    } catch (error: any) {
-      setLoginError(error.message || 'Could not send code.')
-    } finally {
-      setLoginBusy(false)
-    }
-  }
-
-  const handleVerifyCode = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    if (!client) {
-      setLoginError('Email sign-in is not configured.')
-      return
-    }
-    if (!/^\d{6}$/.test(loginCode.trim())) {
-      setLoginError('Enter the 6-digit confirmation code from your email.')
-      return
-    }
-    setLoginBusy(true)
-    setLoginError('')
-    try {
-      const { data, error } = await client.auth.verifyOtp({
-        email: loginEmail,
-        token: loginCode.trim(),
-        type: 'email',
-      })
-      if (error) throw error
-      setAccessToken(data.session?.access_token ?? null)
-      setIsLoginModalOpen(false)
-      setLoginStep('email')
-      setLoginCode('')
-      setLoginEmail('')
-      showToast('Signed in successfully.')
-      await loadCatalog()
-    } catch (error: any) {
-      setLoginError(error.message || 'Invalid or expired code.')
-    } finally {
-      setLoginBusy(false)
-    }
-  }
-
   const handleSignOut = async () => {
-    if (client) await client.auth.signOut()
+    await signOutAuth()
     setAccessToken(null)
     applyAccount(null)
     setSavedVehicleIds([])
@@ -2933,7 +2871,7 @@ export default function FanosPortal({ authUrl = '', authKey = '' }: { authUrl?: 
                   <h2 className="text-sm font-bold text-[#16201B]">Subscriptions on Fanos Tender</h2>
                 </div>
                 <ul className="list-disc list-inside text-xs text-[#6E695F] space-y-1.5 pl-1">
-                  <li>Sign in with email one-time code.</li>
+                  <li>Sign in with Google or email and password.</li>
                   <li>Transfer using the published bank instructions, then submit your reference in Profile.</li>
                   <li>Access unlocks after the operator verifies the reference.</li>
                   <li>Subscription fees pay for directory access—not for a bid, CPO, or contract award.</li>
@@ -3091,14 +3029,14 @@ export default function FanosPortal({ authUrl = '', authKey = '' }: { authUrl?: 
         )}
 
         {/* ============================================================== */}
-        {/* MODAL 1: EMAIL OTP LOGIN */}
+        {/* MODAL 1: FIREBASE SIGN IN (Google + email/password) */}
         {/* ============================================================== */}
         {isLoginModalOpen && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in"
             role="dialog"
             aria-modal="true"
-            aria-label="Email sign in"
+            aria-label="Sign in"
           >
             <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-[#E5DFD5] p-6 sm:p-7 space-y-5">
               <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3">
@@ -3107,12 +3045,8 @@ export default function FanosPortal({ authUrl = '', authKey = '' }: { authUrl?: 
                     <UserCheck className="size-4" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-[#16201B]">
-                      {loginStep === 'email' ? 'Email sign in' : 'Enter 6-Digit Code'}
-                    </h3>
-                    <p className="text-[11px] text-[#6E695F]">
-                      Email one-time code
-                    </p>
+                    <h3 className="text-base font-bold text-[#16201B]">Sign in to Fanos Tender</h3>
+                    <p className="text-[11px] text-[#6E695F]">Google or email and password</p>
                   </div>
                 </div>
                 <button
@@ -3122,78 +3056,14 @@ export default function FanosPortal({ authUrl = '', authKey = '' }: { authUrl?: 
                   <X className="size-5" />
                 </button>
               </div>
-
-              {loginError && (
-                <div className="p-2.5 rounded-lg bg-[#FDF2F2] border border-[#F8B4B4] text-xs text-[#9B1C1C]">
-                  {loginError}
-                </div>
-              )}
-
-              {loginStep === 'email' ? (
-                <form onSubmit={handleSendCode} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-[#16201B]">
-                      Enter your email address
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="e.g. abebe.k@ethiopia-trade.et"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-[#E5DFD5] bg-[#FAF8F5] text-xs text-[#16201B] focus:outline-hidden focus:border-[#1B4332]"
-                      required
-                      autoFocus
-                    />
-                  </div>
-
-                  <p className="text-[11px] text-[#6E695F] leading-relaxed">
-                    By continuing you agree to the{' '}
-                    <a href="/terms" className="font-semibold text-[#1B4332] underline" target="_blank" rel="noreferrer">Terms of Use</a>
-                    {' '}and{' '}
-                    <a href="/privacy" className="font-semibold text-[#1B4332] underline" target="_blank" rel="noreferrer">Privacy Policy</a>.
-                  </p>
-                  <button
-                    type="submit"
-                    disabled={loginBusy}
-                    className="w-full py-2.5 rounded-lg bg-[#1B4332] text-white text-xs font-bold hover:bg-[#2D6A4F] transition shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-60"
-                  >
-                    <span>{loginBusy ? 'Sending…' : 'Send 6-Digit Code'}</span>
-                    <Send className="size-3.5" />
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleVerifyCode} className="space-y-4">
-                  <p className="text-xs text-[#6E695F]">
-                    We sent a 6-digit confirmation code to{' '}
-                    <strong className="text-[#16201B]">{loginEmail}</strong>.
-                  </p>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-[#16201B]">
-                      6-Digit Verification Code
-                    </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      placeholder="000000"
-                      value={loginCode}
-                      onChange={(e) => setLoginCode(e.target.value)}
-                      className="w-full px-3 py-2.5 text-center font-mono tracking-widest text-lg font-bold rounded-lg border border-[#E5DFD5] bg-[#FAF8F5] text-[#16201B] focus:outline-hidden focus:border-[#1B4332]"
-                      maxLength={6}
-                      autoFocus
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loginBusy}
-                    className="w-full py-2.5 rounded-lg bg-[#1B4332] text-white text-xs font-bold hover:bg-[#2D6A4F] transition shadow-xs disabled:opacity-60"
-                  >
-                    {loginBusy ? 'Verifying…' : 'Verify & sign in'}
-                  </button>
-                </form>
-              )}
+              <AuthPanel
+                compact
+                onSuccess={async () => {
+                  setIsLoginModalOpen(false)
+                  showToast('Signed in successfully.')
+                  await loadCatalog()
+                }}
+              />
             </div>
           </div>
         )}

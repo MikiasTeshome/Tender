@@ -1,6 +1,6 @@
 'use client';
 
-import { createClient } from '@supabase/supabase-js';
+import { getIdToken } from './firebase-client.js';
 
 const closeFmt = new Intl.DateTimeFormat('en-ET', {
   timeZone: 'Africa/Addis_Ababa',
@@ -20,16 +20,11 @@ export function photoUrl(id) {
   return id ? '/api/photos/' + id : '';
 }
 
-export function createPortalClient(authUrl, authKey) {
-  if (!authUrl || !authKey) return null;
-  return createClient(authUrl, authKey);
-}
-
 export function createApi(getToken) {
   return async function api(path, options = {}) {
     const {data, ...init} = options;
     const headers = new Headers(init.headers);
-    const token = typeof getToken === 'function' ? getToken() : getToken;
+    const token = typeof getToken === 'function' ? await getToken() : getToken;
     if (token) headers.set('Authorization', 'Bearer ' + token);
     if (data && !(data instanceof FormData)) headers.set('Content-Type', 'application/json');
     const response = await fetch('/api/' + path, {
@@ -46,6 +41,10 @@ export function createApi(getToken) {
     if (!type.includes('application/json')) return response;
     return response.json();
   };
+}
+
+export function createTokenApi() {
+  return createApi(() => getIdToken());
 }
 
 export async function fetchAllListings(api, params = {}) {
