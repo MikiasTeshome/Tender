@@ -19,6 +19,10 @@
 }
 
 .auth-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   background: #fff;
   color: #16201b;
 }

@@ -46,6 +46,7 @@ export default function AuthPanel({onSuccess, compact = false}) {
         disabled={busy}
         onClick={() => run(() => signInWithGoogle())}
       >
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" width="18" height="18" />
         Continue with Google
       </button>
 
@@ -76,7 +77,7 @@ export default function AuthPanel({onSuccess, compact = false}) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
-            placeholder="you@organization.et"
+            placeholder="you@example.com"
           />
         </label>
         <label>
