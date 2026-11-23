@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS plans (
   price numeric(12,2) CHECK (price > 0)
 );
 INSERT INTO plans(months) VALUES (1),(3),(6),(12) ON CONFLICT DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS settings (key text PRIMARY KEY, value text NOT NULL);
 CREATE TABLE IF NOT EXISTS payments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

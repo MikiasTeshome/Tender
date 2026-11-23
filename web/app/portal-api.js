@@ -104,8 +104,10 @@ export function mapVehicle(item) {
     },
     contactPerson: d.contact || 'See notice',
     visitingHours: d.visitingHours || '—',
-    mainImage: gallery[0]?.src || '/sedan-demo.webp',
-    gallery: gallery.length ? gallery : [{src: '/sedan-demo.webp', caption: item.title}],
+    // Keep missing photos as a real empty state for the public cards. The
+    // detail view supplies a neutral fallback only when it needs an image.
+    mainImage: gallery[0]?.src || '',
+    gallery,
     noticeRef: d.reference || d.lot || item.id.slice(0, 8),
     locked: !!item.locked,
     access: item.access,

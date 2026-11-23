@@ -1,5 +1,40 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Noto Sans Ethiopic";
+  src: url("/fonts/noto-sans-ethiopic-bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  unicode-range: U+1200-1399;
+}
+
+.fanos-hero-title [lang="am"] {
+  font-family: "Noto Sans Ethiopic", Nyala, sans-serif;
+  font-size: 0.8em;
+  font-weight: 700;
+  letter-spacing: normal;
+  align-self: center;
+}
+
+@font-face {
+  font-family: "Noto Serif Ethiopic";
+  src: url("/fonts/noto-serif-ethiopic-regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+1200-1399;
+}
+
+.fanos-hero-title,
+.fanos-hero-intro {
+  color: #0b2f24;
+}
+
+.fanos-hero-intro {
+  font-family: "Noto Serif Ethiopic", Nyala, serif;
+}
+
 .fanos-brand {
   display: inline-flex;
   align-items: center;

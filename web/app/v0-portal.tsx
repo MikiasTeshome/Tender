@@ -24,6 +24,7 @@ import {
   Briefcase,
   Building2,
   CalendarDays,
+  CarFront,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -147,6 +148,51 @@ type AlertNotification = {
   read: boolean
   targetId?: string
   targetType?: 'tender' | 'vehicle'
+}
+
+const heroTitles = [
+  { text: 'Find your next bid', lang: 'en' },
+  { text: 'ቀጣዩን ጨረታዎን ያግኙ', lang: 'am' },
+]
+
+function HeroTitle() {
+  const [title, setTitle] = useState({ index: 0, length: heroTitles[0].text.length, deleting: false, hasSwitched: false })
+  const current = heroTitles[title.index]
+
+  useEffect(() => {
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    if (motion.matches) return
+
+    const atEnd = title.length === current.text.length
+    const atStart = title.length === 0
+    const hold = current.lang === 'en' && title.hasSwitched ? 10_000 : 2600
+    const delay = title.deleting ? (atStart ? 220 : 42) : (atEnd ? hold : 85)
+
+    const timer = window.setTimeout(() => {
+      if (motion.matches) return
+      if (title.deleting && atStart) {
+        setTitle({ index: (title.index + 1) % heroTitles.length, length: 0, deleting: false, hasSwitched: true })
+      } else if (!title.deleting && atEnd) {
+        setTitle({ ...title, deleting: true })
+      } else {
+        setTitle({ ...title, length: title.length + (title.deleting ? -1 : 1) })
+      }
+    }, delay)
+
+    return () => window.clearTimeout(timer)
+  }, [current, title])
+
+  return (
+    <h1 className="fanos-hero-title grid text-4xl sm:text-5xl md:text-[3.4rem] font-extrabold tracking-tight leading-[1.2]">
+      <span className="sr-only">{heroTitles[0].text} <span lang="am">{heroTitles[1].text}</span></span>
+      {heroTitles.map(({ text, lang }) => (
+        <span key={lang} aria-hidden="true" lang={lang} className="invisible col-start-1 row-start-1">{text}</span>
+      ))}
+      <span aria-hidden="true" lang={current.lang} className="col-start-1 row-start-1">
+        {current.text.slice(0, title.length)}
+      </span>
+    </h1>
+  )
 }
 
 export default function FanosPortal() {
@@ -839,16 +885,19 @@ export default function FanosPortal() {
           <div className="space-y-8 animate-in fade-in duration-200">
             {/* Search-first hero (kept from local design; mate portal wiring retained) */}
             <section className="rounded-[28px] bg-gradient-to-br from-[#dff0e6] via-[#f3f5f0] to-[#e6ebe4] text-[#16201B] px-6 py-14 sm:px-10 sm:py-16 shadow-sm flex flex-col items-center text-center gap-4">
-              <h1 className="text-4xl sm:text-5xl md:text-[3.4rem] font-extrabold tracking-tight leading-[1.05] text-[#0b2f24]">
-                Find your next bid
-              </h1>
-              <p className="text-base sm:text-lg text-[#5f6b64] max-w-xl leading-relaxed">
-                Public, NGO and private tenders, plus vehicle lots, in one place.
-              </p>
+              <HeroTitle />
+              <div className="grid max-w-xl gap-1.5">
+                <p className="text-base sm:text-lg text-[#5f6b64] leading-relaxed">
+                  Public, NGO and private tenders, plus vehicle lots, in one place.
+                </p>
+                <p lang="am" className="fanos-hero-intro text-[11px] lg:text-xs leading-relaxed">
+                  የመንግሥት፣ የግልና የመንግሥታዊ ያልሆኑ ድርጅቶች ጨረታዎችን እንዲሁም የተሽከርካሪ ጨረታዎችን እዚህ ያገኛሉ።
+                </p>
+              </div>
 
               <form
                 role="search"
-                className="w-full max-w-[720px] mt-2 bg-white border border-[#dfe6df] rounded-full shadow-[0_8px_28px_rgba(16,24,20,0.09)] flex items-center gap-3 pl-6 pr-2 py-2 text-left"
+                className="w-full max-w-[720px] mt-2 bg-white border border-[#e4e9e4] rounded-full shadow-[0_2px_8px_rgba(16,24,20,0.08)] focus-within:ring-2 focus-within:ring-[#1B4332]/20 flex items-center gap-3 pl-4 pr-1 py-1 md:pl-6 md:pr-2 md:py-2 text-left"
                 onSubmit={(e) => {
                   e.preventDefault()
                   const q = tenderSearchQuery.trim().toLowerCase()
@@ -860,24 +909,26 @@ export default function FanosPortal() {
                   }
                 }}
               >
-                <Search className="size-5 text-[#6E695F] shrink-0" />
+                <Search aria-hidden="true" className="size-5 text-[#315d48] shrink-0" />
                 <input
                   type="search"
                   aria-label="Search tenders and vehicles"
-                  placeholder="Search tenders and vehicles"
+                  placeholder="Search bids"
                   value={tenderSearchQuery}
                   onChange={(e) => setTenderSearchQuery(e.target.value)}
-                  className="flex-1 min-w-0 border-0 bg-transparent text-base text-[#16201B] placeholder:text-[#918C81] focus:outline-hidden min-h-[48px]"
+                  className="flex-1 min-w-0 border-0 bg-transparent text-base text-[#16201B] placeholder:text-sm md:placeholder:text-base placeholder:text-[#918C81] focus:outline-hidden min-h-[44px] md:min-h-[48px]"
                 />
                 <button
                   type="submit"
-                  className="shrink-0 rounded-full bg-[#0b2f24] hover:bg-[#14503c] text-white font-bold text-base px-8 min-h-[52px] transition"
+                  aria-label="Search"
+                  className="shrink-0 flex items-center justify-center rounded-full bg-[#edf3ee] hover:bg-[#dfeae2] text-[#1B4332] md:bg-[#0b2f24] md:hover:bg-[#14503c] md:text-white font-bold text-base w-11 md:w-auto md:px-8 min-h-[44px] md:min-h-[52px] transition"
                 >
-                  Search
+                  <ArrowRight aria-hidden="true" className="size-5 md:hidden" />
+                  <span className="hidden md:inline">Search</span>
                 </button>
               </form>
 
-              <div className="flex flex-wrap items-center justify-center gap-2.5 mt-2" aria-label="Browse by category">
+              <div className="hidden flex-wrap items-center justify-center gap-2.5 mt-2 md:flex" aria-label="Browse by category">
                 {[
                   { label: 'Public tenders', cat: 'Public Tenders' as const, icon: Building2, count: 4 },
                   { label: 'NGO tenders', cat: 'NGO Tenders' as const, icon: Briefcase, count: 4 },
@@ -901,25 +952,20 @@ export default function FanosPortal() {
             {/* Four Exact Category Labels (Stitch Android Alignment) */}
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#6E695F] block">
-                    SECTOR DIRECTORY · FOUR EXACT CATEGORIES
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-black text-[#16201B]">
-                    Select a Category to Preview
-                  </h2>
-                </div>
+                <h2 className="text-[11px] font-bold uppercase tracking-wider text-[#6E695F]">
+                  Select a Category to Preview
+                </h2>
                 <span className="text-xs text-[#6E695F] hidden sm:inline">
                   Click a category below to switch active preview
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-3.5">
+              <div className="grid grid-cols-2 md:grid-cols-4 auto-rows-fr gap-3 sm:gap-3.5">
                 {[
                   {
                     id: 'Vehicle Bids' as const,
                     label: 'Vehicle Bids',
-                    sublabel: 'Auctions & Fleet Disposal',
+                    sublabel: 'የተሽከርካሪ ጨረታዎች',
                     count: `${vehicleLots.length} Lots`,
                     icon: Truck,
                     accent: 'bg-[#D8F3DC] text-[#1B4332]',
@@ -927,7 +973,7 @@ export default function FanosPortal() {
                   {
                     id: 'Public Tenders' as const,
                     label: 'Public Tenders',
-                    sublabel: 'Federal & Regional Bureaus',
+                    sublabel: 'የመንግሥት ጨረታዎች',
                     count: `${procurementTenders.filter((t) => t.category === 'Public').length} Tenders`,
                     icon: Building2,
                     accent: 'bg-[#EAF7EE] text-[#1B4332]',
@@ -935,7 +981,7 @@ export default function FanosPortal() {
                   {
                     id: 'NGO Tenders' as const,
                     label: 'NGO Tenders',
-                    sublabel: 'UN & Relief Missions',
+                    sublabel: 'የመንግሥታዊ ያልሆኑ ድርጅቶች ጨረታዎች',
                     count: `${procurementTenders.filter((t) => t.category === 'NGO').length} Tenders`,
                     icon: Globe,
                     accent: 'bg-[#EFF6FF] text-[#1D4ED8]',
@@ -943,7 +989,7 @@ export default function FanosPortal() {
                   {
                     id: 'Private Tenders' as const,
                     label: 'Private Tenders',
-                    sublabel: 'Commercial & Corporate',
+                    sublabel: 'የግል ድርጅቶች ጨረታዎች',
                     count: `${procurementTenders.filter((t) => t.category === 'Private').length} Tenders`,
                     icon: Briefcase,
                     accent: 'bg-[#FEF3C7] text-[#B45309]',
@@ -973,7 +1019,7 @@ export default function FanosPortal() {
                         <span className="text-sm sm:text-base font-extrabold text-[#16201B] block">
                           {cat.label}
                         </span>
-                        <span className="text-[11px] text-[#6E695F] block">
+                        <span lang="am" className="font-['Noto_Serif_Ethiopic'] text-[11px] leading-relaxed text-[#6E695F] block">
                           {cat.sublabel}
                         </span>
                       </div>
@@ -1002,15 +1048,11 @@ export default function FanosPortal() {
                     <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-[#EFECE6] text-[#16201B]">
                       Selected Category Preview
                     </span>
-                    <span className="text-xs text-[#6E695F]">·</span>
-                    <span className="text-xs text-[#6E695F]">East Africa Time (EAT)</span>
                   </div>
                   <h3 className="text-xl sm:text-2xl font-black text-[#16201B] mt-1">
                     {selectedHomeCategory}
                   </h3>
                   <p className="text-xs text-[#6E695F] mt-0.5 max-w-2xl">
-                    {selectedHomeCategory === 'Vehicle Bids' &&
-                      'Institutional sedans, 4x4 pickups, and regional utility vehicles with Keys, Starter, and Mileage inspection specs.'}
                     {selectedHomeCategory === 'Public Tenders' &&
                       'Federal ministries and regional bureau procurements, including school desks and infrastructure audits.'}
                     {selectedHomeCategory === 'NGO Tenders' &&
@@ -1025,7 +1067,7 @@ export default function FanosPortal() {
                   onClick={() => navigateToCategory(selectedHomeCategory)}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1B4332] text-white text-xs font-bold hover:bg-[#2D6A4F] transition shadow-xs shrink-0 self-start sm:self-auto"
                 >
-                  <span>View all {selectedHomeCategory}</span>
+                  <span>View full {selectedHomeCategory} directory · {selectedHomeCategory === 'Vehicle Bids' ? vehicleLots.length : previewTenders.length} listings</span>
                   <ArrowRight className="size-3.5" />
                 </button>
               </div>
@@ -1041,6 +1083,16 @@ export default function FanosPortal() {
                         onClick={() => openVehicleDetail(lot)}
                         className="group bg-[#FAF8F5] border border-[#E5DFD5] hover:border-[#1B4332] rounded-xl p-4 transition shadow-2xs hover:shadow-md cursor-pointer flex flex-col justify-between gap-3 text-left"
                       >
+                        <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden bg-[#E8E4DA]">
+                          {lot.mainImage ? (
+                            <Image unoptimized src={lot.mainImage} alt={lot.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
+                          ) : (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-[#6E695F] text-xs gap-1">
+                              <CarFront className="size-6 opacity-60" />
+                              <span>Photo coming soon</span>
+                            </div>
+                          )}
+                        </div>
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <span
@@ -1051,9 +1103,6 @@ export default function FanosPortal() {
                               }`}
                             >
                               {lot.conditionLabel}
-                            </span>
-                            <span className="text-[11px] font-mono text-[#6E695F] font-semibold">
-                              {lot.id}
                             </span>
                           </div>
 
@@ -1812,12 +1861,12 @@ export default function FanosPortal() {
                 {/* Photo Gallery Box */}
                 <div className="space-y-3">
                   <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] rounded-xl overflow-hidden bg-[#E8E4DA] border border-[#E5DFD5] shadow-xs">
-                    <Image
+                      <Image
                       unoptimized
                       src={
                         !isSubscriberUnlocked
-                          ? selectedVehicle.mainImage
-                          : selectedVehicle.gallery[activeVehiclePhotoIndex]?.src || selectedVehicle.mainImage
+                          ? selectedVehicle.mainImage || '/sedan-demo.webp'
+                          : selectedVehicle.gallery[activeVehiclePhotoIndex]?.src || selectedVehicle.mainImage || '/sedan-demo.webp'
                       }
                       alt={
                         !isSubscriberUnlocked
@@ -2345,11 +2394,6 @@ export default function FanosPortal() {
                               {lot.conditionLabel}
                             </span>
                           </div>
-                          <div className="absolute top-2.5 right-2.5">
-                            <span className="bg-black/75 backdrop-blur-xs text-white text-[11px] font-mono px-2 py-0.5 rounded font-semibold">
-                              {lot.id}
-                            </span>
-                          </div>
                           <div className="absolute bottom-2.5 right-2.5 bg-black/60 backdrop-blur-xs text-white text-[11px] px-2 py-0.5 rounded flex items-center gap-1">
                             <Grid2X2 className="size-3" />
                             <span>{lot.gallery.length} Photos</span>
@@ -2360,9 +2404,6 @@ export default function FanosPortal() {
                         <div className="p-5 flex flex-col flex-1 gap-3">
                           <div>
                             <div className="flex items-center justify-between">
-                              <span className="text-[11px] font-mono font-semibold text-[#6E695F]">
-                                LOT #{lot.id}
-                              </span>
                               <button
                                 type="button"
                                 onClick={() => toggleSaveVehicle(lot.id)}

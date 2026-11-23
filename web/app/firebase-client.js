@@ -8,6 +8,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
   signOut as firebaseSignOut,
   sendEmailVerification,
   updateProfile,
@@ -62,8 +63,19 @@ async function requireVerifiedEmail(auth, user) {
 export async function signInWithGoogle() {
   const auth = getFirebaseAuth();
   if (!auth) throw new Error('Firebase Auth is not configured.');
-  const result = await signInWithPopup(auth, new GoogleAuthProvider());
-  return requireVerifiedEmail(auth, result.user);
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    return requireVerifiedEmail(auth, result.user);
+  } catch (error) {
+    // Some browsers, privacy settings, and embedded localhost sessions block
+    // Firebase popups. Redirect uses the same provider without that blocker.
+    if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(error?.code)) {
+      await signInWithRedirect(auth, provider);
+      return null;
+    }
+    throw error;
+  }
 }
 
 export async function signInWithEmail(email, password) {
