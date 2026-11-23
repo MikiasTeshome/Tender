@@ -43,10 +43,10 @@ export default function Shell() {
   const mode = useViewportMode();
 
   const account = me;
-  const api = useCallback(async (path, options = {}) => {
+  const api = useCallback(async (path, options = {}, retried = false) => {
     const {data, binary, ...init} = options;
     const headers = new Headers(init.headers);
-    const token = accessToken || await getIdToken();
+    const token = (await getIdToken(retried)) || accessToken;
     if (token) headers.set('Authorization', 'Bearer ' + token);
     if (data && !(data instanceof FormData)) headers.set('Content-Type', 'application/json');
     const response = await fetch('/api/' + path, {
@@ -54,6 +54,13 @@ export default function Shell() {
       headers,
       body: data instanceof FormData ? data : data ? JSON.stringify(data) : undefined,
     });
+    if (response.status === 401 && !retried) {
+      const fresh = await getIdToken(true);
+      if (fresh) {
+        setAccessToken(fresh);
+        return api(path, options, true);
+      }
+    }
     if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error ?? 'Request failed.');
     return binary ? response.blob() : response.json();
   }, [accessToken]);

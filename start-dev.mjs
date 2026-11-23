@@ -9,7 +9,7 @@ const web = path.join(root, 'web');
 const logPath = path.join(root, 'dev-server.log');
 const out = createWriteStream(logPath, { flags: 'w' });
 
-const child = spawn(process.execPath, [nextCli, 'dev', '-H', '127.0.0.1', '-p', '3000'], {
+const child = spawn(process.execPath, [nextCli, 'dev', '-H', 'localhost', '-p', '3000'], {
   cwd: web,
   env: { ...process.env, FORCE_COLOR: '0' },
   stdio: ['ignore', 'pipe', 'pipe'],

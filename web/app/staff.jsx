@@ -3,10 +3,27 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import './staff.css';
 
+const ETHIOPIA_REGIONS = [
+  'Addis Ababa',
+  'Afar',
+  'Amhara',
+  'Benishangul-Gumuz',
+  'Central Ethiopia',
+  'Dire Dawa',
+  'Gambela',
+  'Harari',
+  'Nationwide',
+  'Oromia',
+  'Sidama',
+  'Somali',
+  'South Ethiopia',
+  'Southwest Ethiopia',
+  'Tigray',
+];
+
 const listingFields = [
   ['title', 'Title', true],
   ['issuer', 'Issuer', true],
-  ['region', 'Region', true],
   ['reference', 'Procurement reference'],
   ['lot', 'Lot number'],
   ['sourceUrl', 'Original notice URL', false, 'url'],
@@ -38,6 +55,12 @@ function statusBadge(status) {
   return <span className={'staff-badge ' + key}>{status || 'unknown'}</span>;
 }
 
+function regionOptions(current) {
+  const value = (current || '').trim();
+  if (value && !ETHIOPIA_REGIONS.includes(value)) return [value, ...ETHIOPIA_REGIONS];
+  return ETHIOPIA_REGIONS;
+}
+
 export default function Admin({api, onBack}) {
   const [tab, setTab] = useState('listings');
   const [items, setItems] = useState([]);
@@ -47,6 +70,7 @@ export default function Admin({api, onBack}) {
   const [formId, setFormId] = useState(0);
   const [plans, setPlans] = useState(null);
   const [message, setMessage] = useState('');
+  const [messageTone, setMessageTone] = useState('ok');
   const [busy, setBusy] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -56,7 +80,10 @@ export default function Admin({api, onBack}) {
   }, [api, tab]);
 
   useEffect(() => {
-    load().catch((error) => setMessage(error.message));
+    load().catch((error) => {
+      setMessageTone('error');
+      setMessage(error.message);
+    });
   }, [load]);
 
   async function run(action) {
@@ -64,8 +91,11 @@ export default function Admin({api, onBack}) {
     setBusy(true);
     try {
       await action();
+      window.scrollTo({top: 0, behavior: 'smooth'});
     } catch (error) {
-      setMessage(error.message);
+      setMessageTone('error');
+      setMessage(error.message || 'Request failed.');
+      window.scrollTo({top: 0, behavior: 'smooth'});
     } finally {
       setBusy(false);
     }
@@ -78,7 +108,12 @@ export default function Admin({api, onBack}) {
     setFormId((id) => id + 1);
     setItems([]);
     setTab('listings');
-    if (tab === 'listings') void load().catch((error) => setMessage(error.message));
+    if (tab === 'listings') {
+      void load().catch((error) => {
+        setMessageTone('error');
+        setMessage(error.message);
+      });
+    }
   }
 
   function chooseTab(next) {
@@ -145,7 +180,11 @@ export default function Admin({api, onBack}) {
       ))}
     </div>
 
-    {message && <p role="status" className="staff-callout">{message}</p>}
+    {message && (
+      <p role="status" className={'staff-callout' + (messageTone === 'error' ? ' staff-callout-error' : '')}>
+        {message}
+      </p>
+    )}
 
     {tab === 'listings' && <>
       <div className="staff-split">
@@ -160,7 +199,7 @@ export default function Admin({api, onBack}) {
       <p className="staff-note">
         {vehicle
           ? 'Vehicle lots need at least one authorized photo. Cover stays public; extra photos follow paid access.'
-          : 'Enter the issuer notice details. Use Draft until the listing is ready to publish.'}
+          : 'Enter the issuer notice details and the original notice URL. Use Draft until the listing is ready to publish.'}
       </p>
 
       <form
@@ -169,12 +208,25 @@ export default function Admin({api, onBack}) {
         onSubmit={(event) => {
           event.preventDefault();
           const data = new FormData(event.currentTarget);
-          data.set('deadline', data.get('deadline') + ':00+03:00');
+          const deadline = String(data.get('deadline') || '');
+          if (!deadline) {
+            setMessageTone('error');
+            setMessage('Choose a closing date and time.');
+            return;
+          }
+          data.set('deadline', deadline + ':00+03:00');
           data.set('vehicle', String(vehicle));
           if (review) data.set('reviewKey', review.source_key);
+          if (!vehicle && !String(data.get('sourceUrl') || '').trim()) {
+            setMessageTone('error');
+            setMessage('Add the original notice URL for this tender.');
+            window.scrollTo({top: 0, behavior: 'smooth'});
+            return;
+          }
           void run(async () => {
             await api('admin/listings' + (item ? '/' + item.id : ''), {method: item ? 'PUT' : 'POST', data});
             edit(null, null, vehicle);
+            setMessageTone('ok');
             setMessage('Listing saved.');
             await load();
           });
@@ -183,10 +235,24 @@ export default function Admin({api, onBack}) {
         <div className="staff-form-grid">
           {listingFields.map(([key, label, required, type]) => (
             <label key={key}>
-              {label}
-              <input name={key} type={type ?? 'text'} required={required} defaultValue={values[key] ?? ''} />
+              {label}{key === 'sourceUrl' && !vehicle ? ' (required)' : ''}
+              <input
+                name={key}
+                type={type ?? 'text'}
+                required={key === 'sourceUrl' ? !vehicle : required}
+                defaultValue={values[key] ?? ''}
+              />
             </label>
           ))}
+          <label>
+            Region
+            <select name="region" required defaultValue={values.region ?? ''}>
+              <option value="">Select region</option>
+              {regionOptions(values.region).map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+          </label>
           <label>
             Issuer sector
             <select name="sector" defaultValue={values.sector ?? (vehicle ? 'private' : 'public')}>
@@ -259,7 +325,7 @@ export default function Admin({api, onBack}) {
           </label>
         </>}
         <button type="submit" className="staff-primary" disabled={busy}>
-          {item ? 'Save changes' : vehicle ? 'Save vehicle lot' : 'Save tender'}
+          {busy ? 'Saving…' : item ? 'Save changes' : vehicle ? 'Save vehicle lot' : 'Save tender'}
         </button>
       </form>
 
@@ -359,6 +425,7 @@ export default function Admin({api, onBack}) {
                       void run(async () => {
                         await api('admin/payments/' + entry.id, {method: 'PUT', data: {status}});
                         await load();
+                        setMessageTone('ok');
                         setMessage('Payment ' + status + '.');
                       });
                     }}
@@ -383,12 +450,16 @@ export default function Admin({api, onBack}) {
           void run(async () => {
             await api('admin/plans', {method: 'PUT', data: {prices, instructions: form.get('instructions')}});
             await load();
+            setMessageTone('ok');
             setMessage('Plans saved.');
           });
         }}
       >
         <h2>Plans and payment instructions</h2>
-        <p className="staff-note">Blank prices disable that term. Instructions are shown on the website subscription screen.</p>
+        <p className="staff-note">
+          Set at least one ETB price and bank payment instructions before bidders can submit payment references.
+          Blank prices disable that term. Instructions are shown on the website Profile screen.
+        </p>
         <div className="staff-form-grid">
           {plans.plans.map((plan) => (
             <label key={plan.months}>
@@ -401,7 +472,9 @@ export default function Admin({api, onBack}) {
           Payment instructions
           <textarea name="instructions" defaultValue={plans.instructions} />
         </label>
-        <button type="submit" className="staff-primary" disabled={busy}>Save plans</button>
+        <button type="submit" className="staff-primary" disabled={busy}>
+          {busy ? 'Saving…' : 'Save plans'}
+        </button>
       </form>
     )}
 
