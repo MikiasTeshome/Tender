@@ -1,13 +1,13 @@
-import Shell from './supplier/Shell.jsx';
+import StaffGate from './StaffGate.jsx';
 import Portal from './v0-portal';
 
 export default async function Page({searchParams}) {
   const params = await searchParams;
   const screen = params?.screen ?? '';
 
-  // Staff console stays on Shell; public catalog/auth/profile live in portal chrome.
+  // Staff console uses portal-aligned chrome; public catalog stays in the portal.
   if (screen === 'staff') {
-    return <Shell />;
+    return <StaffGate />;
   }
 
   return <Portal />;

@@ -21,10 +21,12 @@ export function photoUrl(id) {
 }
 
 export function createApi(getToken) {
-  return async function api(path, options = {}) {
+  return async function api(path, options = {}, forcedToken) {
     const {data, ...init} = options;
     const headers = new Headers(init.headers);
-    const token = typeof getToken === 'function' ? await getToken() : getToken;
+    const token = forcedToken
+      || (typeof getToken === 'function' ? await getToken() : getToken)
+      || await getIdToken();
     if (token) headers.set('Authorization', 'Bearer ' + token);
     if (data && !(data instanceof FormData)) headers.set('Content-Type', 'application/json');
     const response = await fetch('/api/' + path, {
@@ -32,6 +34,10 @@ export function createApi(getToken) {
       headers,
       body: data instanceof FormData ? data : data ? JSON.stringify(data) : undefined,
     });
+    if (response.status === 401 && forcedToken == null) {
+      const fresh = await getIdToken(true);
+      if (fresh) return api(path, options, fresh);
+    }
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
       throw new Error(err.error ?? 'Request failed.');
@@ -59,10 +65,10 @@ export async function fetchAllListings(api, params = {}) {
   return items;
 }
 
-function asList(value) {
-  if (Array.isArray(value)) return value.filter(Boolean);
-  if (typeof value === 'string' && value.trim()) return [value.trim()];
-  return [];
+function text(value) {
+  if (value == null) return '';
+  const cleaned = String(value).trim();
+  return cleaned && cleaned !== '—' ? cleaned : '';
 }
 
 export function mapVehicle(item) {
@@ -70,31 +76,35 @@ export function mapVehicle(item) {
   const photoIds = item.photos?.length ? item.photos : item.cover ? [item.cover] : [];
   const gallery = photoIds.map((id, index) => ({
     src: photoUrl(id),
-    caption: d.captions?.[index] || `Photo ${index + 1}`,
+    caption: text(d.captions?.[index]) || `Photo ${index + 1}`,
   }));
-  const condition = String(d.condition || '').toLowerCase() === 'damaged' ? 'Damaged' : 'Used';
+  const conditionRaw = text(d.condition).toLowerCase();
+  const condition = conditionRaw === 'damaged' || conditionRaw === 'salvage' ? 'Damaged' : 'Used';
   return {
     id: item.id,
     title: item.title,
     condition,
-    conditionLabel: d.condition || condition,
-    region: item.region || '',
-    regionLabel: item.region || '',
-    yardLocation: d.location || item.region || '—',
-    issuer: item.issuer || '',
-    issuerCategory: 'Vehicle disposal',
+    conditionLabel: text(d.condition) || condition,
+    region: text(item.region),
+    regionLabel: text(item.region),
+    yardLocation: text(d.location) || text(item.region),
+    issuer: text(item.issuer),
     closeIso: item.deadline,
     closeLabel: formatClose(item.deadline),
-    cpoBond: d.cpo || d.bond || '—',
-    estimatedReserve: d.reserve || d.estimatedReserve || '—',
     year: Number(d.year) || 0,
     mileage: d.mileage ? String(d.mileage) : '—',
+    make: text(d.make),
+    model: text(d.model),
     keys: d.keys || '—',
     starter: d.starter || '—',
     fuelType: d.fuel || d.fuelType || '—',
     transmission: d.transmission || '—',
     plateStatus: d.plate || d.plateStatus || '—',
     summary: d.description || d.summary || item.title,
+    instructions: text(d.instructions),
+    inspection: text(d.inspection),
+    sourceUrl: text(d.sourceUrl),
+    lot: text(d.lot),
     inspectionReport: {
       engine: d.engine || '—',
       gearbox: d.gearbox || '—',
@@ -108,40 +118,31 @@ export function mapVehicle(item) {
     // detail view supplies a neutral fallback only when it needs an image.
     mainImage: gallery[0]?.src || '',
     gallery,
-    noticeRef: d.reference || d.lot || item.id.slice(0, 8),
+    noticeRef: text(d.reference) || text(d.lot) || item.id.slice(0, 8),
     locked: !!item.locked,
-    access: item.access,
+    access: item.access || 'free',
   };
 }
 
 export function mapTender(item) {
   const d = item.details || {};
   const category = item.sector === 'ngo' ? 'NGO' : item.sector === 'private' ? 'Private' : 'Public';
-  const scope = asList(d.scope).length ? asList(d.scope) : asList(d.description).length ? asList(d.description) : ['See the full notice for scope of work.'];
-  const eligibility = asList(d.eligibility).length ? asList(d.eligibility) : ['See the notice for eligibility requirements.'];
-  const notice = asList(d.notice).length ? asList(d.notice) : asList(d.description).length ? asList(d.description) : [item.title];
   return {
     id: item.id,
     title: item.title,
     category,
     categoryLabel: category,
-    sector: d.category || item.sector || category,
-    issuer: item.issuer || '',
-    refNumber: d.reference || item.id.slice(0, 8),
+    sector: category,
+    issuer: text(item.issuer),
+    refNumber: text(d.reference),
+    lot: text(d.lot),
     closeIso: item.deadline,
     closeLabel: formatClose(item.deadline),
-    cpoAmount: d.cpo || '—',
-    documentFee: d.documentFee || '—',
-    region: item.region || '',
-    gazette: d.gazette || '—',
-    summary: d.description || item.title,
-    scopeOfWork: scope,
-    eligibilityRequirements: eligibility,
-    contactPerson: d.contact || 'See notice',
-    submissionAddress: d.location || d.submissionAddress || '—',
-    fullNoticeText: notice,
+    region: text(item.region),
+    summary: text(d.description),
+    sourceUrl: text(d.sourceUrl),
     locked: !!item.locked,
-    access: item.access,
+    access: item.access || 'free',
   };
 }
 
@@ -166,7 +167,7 @@ export function alertsFromListings(vehicles, tenders) {
     .slice(0, 12);
 
   return soon.map((row, index) => {
-    const isVehicle = 'mainImage' in row.entry;
+    const isVehicle = 'mainImage' in row.entry || 'gallery' in row.entry;
     const hours = Math.max(1, Math.round(row.ms / (1000 * 60 * 60)));
     return {
       id: 'live-' + row.entry.id,

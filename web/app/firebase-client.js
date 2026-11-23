@@ -60,10 +60,33 @@ async function requireVerifiedEmail(auth, user) {
   throw new Error('We sent a verification link to your email. Open it, then sign in again.');
 }
 
+function friendlyAuthError(error) {
+  const code = error?.code || '';
+  const message = error?.message || '';
+  if (code === 'auth/unauthorized-domain') {
+    return new Error(
+      'This site address is not allowed for Firebase sign-in. Open http://localhost:3000 (not 127.0.0.1), or add 127.0.0.1 under Firebase Console → Authentication → Settings → Authorized domains.',
+    );
+  }
+  if (code === 'auth/popup-blocked') {
+    return new Error('Google sign-in popup was blocked. Allow popups for this site and try again.');
+  }
+  if (code === 'auth/popup-closed-by-user') {
+    return new Error('Google sign-in was closed before finishing. Try again.');
+  }
+  if (code === 'auth/network-request-failed' || message.includes('missing initial state')) {
+    return new Error(
+      'Google sign-in was blocked by the browser. Use http://localhost:3000, allow third-party cookies for Google/Firebase (or try Incognito), close the error tab, and try again. Email/password sign-in also works.',
+    );
+  }
+  return error instanceof Error ? error : new Error(message || 'Sign-in failed.');
+}
+
 export async function signInWithGoogle() {
   const auth = getFirebaseAuth();
   if (!auth) throw new Error('Firebase Auth is not configured.');
   const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({prompt: 'select_account'});
   try {
     const result = await signInWithPopup(auth, provider);
     return requireVerifiedEmail(auth, result.user);
@@ -74,23 +97,32 @@ export async function signInWithGoogle() {
       await signInWithRedirect(auth, provider);
       return null;
     }
-    throw error;
+    throw friendlyAuthError(error);
+  }
   }
 }
 
 export async function signInWithEmail(email, password) {
   const auth = getFirebaseAuth();
   if (!auth) throw new Error('Firebase Auth is not configured.');
-  const result = await signInWithEmailAndPassword(auth, email.trim(), password);
-  return requireVerifiedEmail(auth, result.user);
+  try {
+    const result = await signInWithEmailAndPassword(auth, email.trim(), password);
+    return requireVerifiedEmail(auth, result.user);
+  } catch (error) {
+    throw friendlyAuthError(error);
+  }
 }
 
 export async function registerWithEmail(email, password, displayName = '') {
   const auth = getFirebaseAuth();
   if (!auth) throw new Error('Firebase Auth is not configured.');
-  const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
-  if (displayName.trim()) await updateProfile(result.user, {displayName: displayName.trim()});
-  return requireVerifiedEmail(auth, result.user);
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
+    if (displayName.trim()) await updateProfile(result.user, {displayName: displayName.trim()});
+    return requireVerifiedEmail(auth, result.user);
+  } catch (error) {
+    throw friendlyAuthError(error);
+  }
 }
 
 export async function signOutAuth() {
