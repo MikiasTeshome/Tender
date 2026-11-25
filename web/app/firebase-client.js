@@ -99,7 +99,6 @@ export async function signInWithGoogle() {
     }
     throw friendlyAuthError(error);
   }
-  }
 }
 
 export async function signInWithEmail(email, password) {

@@ -14,7 +14,7 @@ import {
   mapTender,
   mapVehicle,
 } from './portal-api.js'
-import { HomePricing } from './supplier/screens.jsx'
+import { HomePricing } from './HomePricing.jsx'
 import {
   ArrowLeft,
   ArrowRight,
@@ -23,54 +23,32 @@ import {
   BookmarkCheck,
   Briefcase,
   Building2,
-  CalendarDays,
   CarFront,
-  Check,
   CheckCircle2,
-  ChevronDown,
   ChevronRight,
   Clock3,
-  Download,
   ExternalLink,
   Eye,
   FileCheck2,
-  FileText,
   Filter,
-  Fuel,
-  Gauge,
-  Gavel,
   Globe,
   Grid2X2,
-  HelpCircle,
   Info,
-  Key,
-  Layers,
   LockKeyhole,
   LogIn,
   LogOut,
-  Mail,
   MapPin,
   Menu,
-  PhoneCall,
-  Printer,
-  RotateCcw,
   Search,
-  Send,
-  ShieldAlert,
   ShieldCheck,
   SlidersHorizontal,
-  Sparkles,
-  Tag,
-  Trash2,
   Truck,
-  Unlock,
   User,
   UserCheck,
   X,
-  Zap,
 } from 'lucide-react'
 
-// TYPES
+// TYPES — public tease + subscriber fields (paid listings hide deadline/address until unlocked)
 type VehicleLot = {
   id: string
   title: string
@@ -80,31 +58,22 @@ type VehicleLot = {
   region: string
   yardLocation: string
   issuer: string
-  issuerCategory: string
   closeIso: string
   closeLabel: string
-  cpoBond: string
-  estimatedReserve: string
   year: number
   mileage: string
-  keys: string
-  starter: string
-  fuelType: string
-  transmission: string
-  plateStatus: string
+  make: string
+  model: string
   summary: string
-  inspectionReport: {
-    engine: string
-    gearbox: string
-    bodyFrame: string
-    interior: string
-    tyres: string
-  }
-  contactPerson: string
-  visitingHours: string
+  instructions: string
+  inspection: string
+  sourceUrl: string
+  noticeRef: string
+  lot: string
   mainImage: string
   gallery: { src: string; caption: string }[]
-  noticeRef: string
+  locked: boolean
+  access: string
 }
 
 type ProcurementTender = {
@@ -115,18 +84,14 @@ type ProcurementTender = {
   sector: string
   issuer: string
   refNumber: string
+  lot: string
   closeIso: string
   closeLabel: string
-  cpoAmount: string
-  documentFee: string
   region: string
-  gazette: string
   summary: string
-  scopeOfWork: string[]
-  eligibilityRequirements: string[]
-  contactPerson: string
-  submissionAddress: string
-  fullNoticeText: string[]
+  sourceUrl: string
+  locked: boolean
+  access: string
 }
 
 type UserProfile = {
@@ -195,6 +160,22 @@ function HeroTitle() {
   )
 }
 
+
+function MembershipRequired({ label = 'Membership required' }: { label?: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 text-[#B45309] font-semibold">
+      <LockKeyhole className="size-3.5 shrink-0" />
+      {label}
+    </span>
+  )
+}
+
+function ClosingField({ locked, closeLabel }: { locked?: boolean; closeLabel?: string }) {
+  if (locked) return <MembershipRequired />
+  if (!closeLabel) return <span className="text-[#6E695F]">—</span>
+  return <span className="text-[#B84A2B] font-bold">{closeLabel}</span>
+}
+
 export default function FanosPortal() {
   // Navigation & View State
   const [activeTab, setActiveTab] = useState<'home' | 'tenders' | 'vehicles' | 'saved' | 'alerts' | 'guidelines' | 'profile'>('home')
@@ -246,13 +227,11 @@ export default function FanosPortal() {
   // Modals & Feedback
   const [activeNoticeModal, setActiveNoticeModal] = useState<{
     refNumber: string
-    gazette: string
     title: string
     issuer: string
-    cpoAmount: string
     closingDate: string
     paragraphs: string[]
-    tenderBox?: string
+    sourceUrl?: string
   } | null>(null)
   const [feedbackToast, setFeedbackToast] = useState<string | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -930,10 +909,10 @@ export default function FanosPortal() {
 
               <div className="hidden flex-wrap items-center justify-center gap-2.5 mt-2 md:flex" aria-label="Browse by category">
                 {[
-                  { label: 'Public tenders', cat: 'Public Tenders' as const, icon: Building2, count: 4 },
-                  { label: 'NGO tenders', cat: 'NGO Tenders' as const, icon: Briefcase, count: 4 },
-                  { label: 'Private tenders', cat: 'Private Tenders' as const, icon: Building2, count: 4 },
-                  { label: 'Vehicle bids', cat: 'Vehicle Bids' as const, icon: Truck, count: 4 },
+                  { label: 'Public tenders', cat: 'Public Tenders' as const, icon: Building2, count: procurementTenders.filter((t) => t.category === 'Public').length },
+                  { label: 'NGO tenders', cat: 'NGO Tenders' as const, icon: Briefcase, count: procurementTenders.filter((t) => t.category === 'NGO').length },
+                  { label: 'Private tenders', cat: 'Private Tenders' as const, icon: Building2, count: procurementTenders.filter((t) => t.category === 'Private').length },
+                  { label: 'Vehicle bids', cat: 'Vehicle Bids' as const, icon: Truck, count: vehicleLots.length },
                 ].map((item) => (
                   <button
                     key={item.label}
@@ -1117,15 +1096,15 @@ export default function FanosPortal() {
                           {/* Vehicle Specs Snapshot */}
                           <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-[#EAE5D9] text-[11px]">
                             <div>
-                              <span className="text-[#6E695F] block">Keys:</span>
+                              <span className="text-[#6E695F] block">Vehicle:</span>
                               <strong className="text-[#16201B] font-semibold truncate block">
-                                {lot.keys}
+                                {[lot.make, lot.model].filter(Boolean).join(' ') || '—'}
                               </strong>
                             </div>
                             <div>
-                              <span className="text-[#6E695F] block">Starter:</span>
+                              <span className="text-[#6E695F] block">Year / km:</span>
                               <strong className="text-[#16201B] font-semibold truncate block">
-                                {lot.starter}
+                                {lot.year || lot.mileage || "—"}
                               </strong>
                             </div>
                           </div>
@@ -1140,13 +1119,11 @@ export default function FanosPortal() {
                         <div className="pt-2 border-t border-[#EAE5D9] flex items-center justify-between text-xs">
                           <div>
                             <span className="text-[10px] text-[#6E695F] block">Closes EAT:</span>
-                            <span className="text-[#B84A2B] font-bold">
-                              {lot.closeLabel}
-                            </span>
+                            <ClosingField locked={lot.locked} closeLabel={lot.closeLabel} />
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-[#1B4332] font-semibold text-right">
-                              CPO: {lot.cpoBond}
+                              {lot.access === 'paid' ? (lot.locked ? 'Membership' : 'Paid') : 'Free'}
                             </span>
                             <button
                               type="button"
@@ -1219,13 +1196,11 @@ export default function FanosPortal() {
                         <div className="pt-2 border-t border-[#EAE5D9] flex items-center justify-between text-xs">
                           <div>
                             <span className="text-[10px] text-[#6E695F] block">Closes EAT:</span>
-                            <span className="text-[#B84A2B] font-bold">
-                              {tender.closeLabel}
-                            </span>
+                            <ClosingField locked={tender.locked} closeLabel={tender.closeLabel} />
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-[#1B4332] font-semibold text-right">
-                              CPO: {tender.cpoAmount}
+                              {tender.access === 'paid' ? (tender.locked ? 'Membership' : 'Paid') : 'Free'}
                             </span>
                             <button
                               type="button"
@@ -1426,12 +1401,16 @@ export default function FanosPortal() {
                             </strong>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-[#6E695F]">Required CPO / Bond:</span>
-                            <strong className="text-[#1B4332] font-bold">{tender.cpoAmount}</strong>
+                            <span className="text-[#6E695F]">Region:</span>
+                            <strong className="text-[#16201B] font-semibold">{tender.region || '—'}</strong>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-[#6E695F]">Closing Deadline:</span>
-                            <span className="font-bold text-[#B84A2B]">{tender.closeLabel}</span>
+                            <span className="text-[#6E695F]">Closing date:</span>
+                            <ClosingField locked={tender.locked} closeLabel={tender.closeLabel} />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[#6E695F]">Original notice:</span>
+                            {tender.locked ? <MembershipRequired /> : <span className="font-semibold text-[#1B4332]">{tender.sourceUrl ? 'Available' : '—'}</span>}
                           </div>
                         </div>
                       </div>
@@ -1442,27 +1421,29 @@ export default function FanosPortal() {
                           onClick={() => openTenderDetail(tender)}
                           className="inline-flex items-center gap-1 text-xs font-bold text-[#1B4332] hover:underline"
                         >
-                          <span>View Scope & Bidding Guide</span>
+                          <span>View notice details</span>
                           <ArrowRight className="size-3.5" />
                         </button>
-                        <button
-                          onClick={() =>
-                            setActiveNoticeModal({
-                              refNumber: tender.refNumber,
-                              gazette: tender.gazette,
-                              title: tender.title,
-                              issuer: tender.issuer,
-                              cpoAmount: tender.cpoAmount,
-                              closingDate: tender.closeLabel,
-                              paragraphs: tender.fullNoticeText,
-                              tenderBox: tender.submissionAddress,
-                            })
-                          }
-                          className="text-xs text-[#6E695F] hover:text-[#16201B] flex items-center gap-1"
-                        >
-                          <Eye className="size-3.5" />
-                          <span>Gazette Notice</span>
-                        </button>
+                        {tender.locked ? (
+                          <span className="text-xs"><MembershipRequired /></span>
+                        ) : tender.summary || tender.sourceUrl ? (
+                          <button
+                            onClick={() =>
+                              setActiveNoticeModal({
+                                refNumber: tender.refNumber || tender.id.slice(0, 8),
+                                title: tender.title,
+                                issuer: tender.issuer,
+                                closingDate: tender.closeLabel,
+                                paragraphs: tender.summary ? [tender.summary] : ['See the original notice for full details.'],
+                                sourceUrl: tender.sourceUrl,
+                              })
+                            }
+                            className="text-xs text-[#6E695F] hover:text-[#16201B] flex items-center gap-1"
+                          >
+                            <Eye className="size-3.5" />
+                            <span>Notice summary</span>
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   )
@@ -1492,7 +1473,6 @@ export default function FanosPortal() {
         {/* ============================================================== */}
         {selectedTender && (
           <article className="space-y-6 animate-in fade-in duration-200">
-            {/* Top Back Row & Save Action */}
             <div className="flex items-center justify-between border-b border-[#E5DFD5] pb-3">
               <button
                 onClick={() => setSelectedTender(null)}
@@ -1501,7 +1481,6 @@ export default function FanosPortal() {
                 <ArrowLeft className="size-4" />
                 <span>Back to Procurement Tenders</span>
               </button>
-
               <button
                 onClick={() => toggleSaveTender(selectedTender.id)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition ${
@@ -1511,266 +1490,125 @@ export default function FanosPortal() {
                 }`}
               >
                 {savedTenderIds.includes(selectedTender.id) ? (
-                  <>
-                    <BookmarkCheck className="size-3.5 fill-[#1B4332]" />
-                    <span>Saved</span>
-                  </>
+                  <><BookmarkCheck className="size-3.5 fill-[#1B4332]" /><span>Saved</span></>
                 ) : (
-                  <>
-                    <Bookmark className="size-3.5" />
-                    <span>Save Tender</span>
-                  </>
+                  <><Bookmark className="size-3.5" /><span>Save Tender</span></>
                 )}
               </button>
             </div>
 
-            {/* Save Microcopy Banner */}
-            {savedTenderIds.includes(selectedTender.id) && (
-              <div className="rounded-lg bg-[#FBF9F4] border border-[#E8DFCF] p-2.5 text-[11px] text-[#6E695F] flex items-center gap-2">
-                <BookmarkCheck className="size-3.5 text-[#1B4332] shrink-0" />
-                <span>
-                  <strong>Saved to your browser list.</strong> Note: Saving bookmarks the tender for deadline tracking; subscriber access to full bid dossiers remains separate.
-                </span>
-              </div>
-            )}
-
-            {/* Title & Issuer Header */}
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={`px-2.5 py-0.5 rounded text-xs font-bold ${
-                    selectedTender.category === 'Public'
-                      ? 'bg-[#EAF7EE] text-[#1B4332]'
-                      : selectedTender.category === 'NGO'
+                <span className={`px-2.5 py-0.5 rounded text-xs font-bold ${
+                  selectedTender.category === 'Public'
+                    ? 'bg-[#EAF7EE] text-[#1B4332]'
+                    : selectedTender.category === 'NGO'
                       ? 'bg-[#EFF6FF] text-[#1D4ED8]'
                       : 'bg-[#FEF3C7] text-[#B45309]'
-                  }`}
-                >
+                }`}>
                   {selectedTender.categoryLabel}
                 </span>
-                <span className="text-xs font-mono font-bold text-[#1B4332]">
-                  {selectedTender.refNumber}
-                </span>
-                <span className="text-xs text-[#6E695F]">· {selectedTender.sector}</span>
+                {selectedTender.refNumber ? (
+                  <span className="text-xs font-mono font-bold text-[#1B4332]">{selectedTender.refNumber}</span>
+                ) : null}
+                <span className="text-xs font-semibold text-[#1B4332]">• Bidding open</span>
+                {selectedTender.access === 'paid' ? (
+                  <span className="text-xs text-[#B45309] font-semibold">Paid notice</span>
+                ) : (
+                  <span className="text-xs text-[#6E695F]">Free notice</span>
+                )}
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#16201B] tracking-tight">
-                {selectedTender.title}
-              </h1>
-              <p className="text-sm text-[#6E695F] max-w-3xl leading-relaxed">
-                {selectedTender.summary}
-              </p>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#16201B] tracking-tight">{selectedTender.title}</h1>
+              <p className="text-sm text-[#6E695F]">{selectedTender.issuer}{selectedTender.region ? ` · ${selectedTender.region}` : ''}</p>
+              {!selectedTender.locked && selectedTender.summary ? (
+                <p className="text-sm text-[#6E695F] max-w-3xl leading-relaxed whitespace-pre-wrap">{selectedTender.summary}</p>
+              ) : null}
             </div>
 
-            {/* 2-Column Detail Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              {/* Left Column (7 cols): Scope, Eligibility, Official notice */}
-              <div className="lg:col-span-7 space-y-6">
-                {/* Scope of Work */}
+              <div className="lg:col-span-7 space-y-5">
                 <div className="bg-white border border-[#E5DFD5] rounded-xl p-5 shadow-xs space-y-3">
-                  <h2 className="text-sm font-bold text-[#16201B] flex items-center gap-2 border-b border-[#F0ECE1] pb-2.5">
-                    <FileCheck2 className="size-4 text-[#1B4332]" />
-                    Scope of Work & Procurement Deliverables
-                  </h2>
-                  <ul className="list-disc list-inside text-xs text-[#6E695F] space-y-2 leading-relaxed">
-                    {selectedTender.scopeOfWork.map((item, idx) => (
-                      <li key={idx} className="pl-1">
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Eligibility Requirements */}
-                <div className="bg-white border border-[#E5DFD5] rounded-xl p-5 shadow-xs space-y-3">
-                  <h2 className="text-sm font-bold text-[#16201B] flex items-center gap-2 border-b border-[#F0ECE1] pb-2.5">
-                    <ShieldCheck className="size-4 text-[#1B4332]" />
-                    Mandatory Bidder Eligibility Documents
-                  </h2>
-                  <ul className="list-disc list-inside text-xs text-[#6E695F] space-y-2 leading-relaxed">
-                    {selectedTender.eligibilityRequirements.map((req, idx) => (
-                      <li key={idx} className="pl-1">
-                        {req}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Official notice reference */}
-                <div className="bg-white border border-[#E5DFD5] rounded-xl p-4.5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-[#FAF8F5] text-[#1B4332] border border-[#E5DFD5]">
-                      <FileText className="size-5" />
+                  <h2 className="text-sm font-bold text-[#16201B] border-b border-[#F0ECE1] pb-2.5">Notice facts</h2>
+                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <dt className="text-[#6E695F]">Closing date</dt>
+                      <dd className="mt-0.5"><ClosingField locked={selectedTender.locked} closeLabel={selectedTender.closeLabel} /></dd>
                     </div>
                     <div>
-                      <h3 className="text-xs font-bold text-[#16201B]">Official Published Notice</h3>
-                      <p className="text-xs text-[#6E695F]">
-                        Published in {selectedTender.gazette} ({selectedTender.refNumber}).
+                      <dt className="text-[#6E695F]">Original notice</dt>
+                      <dd className="mt-0.5">
+                        {selectedTender.locked ? (
+                          <MembershipRequired />
+                        ) : selectedTender.sourceUrl ? (
+                          <a href={selectedTender.sourceUrl} target="_blank" rel="noreferrer" className="font-semibold text-[#1B4332] hover:underline inline-flex items-center gap-1">
+                            Open notice <ExternalLink className="size-3.5" />
+                          </a>
+                        ) : (
+                          <span className="text-[#6E695F]">Not published</span>
+                        )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-[#6E695F]">Issuer</dt>
+                      <dd className="font-semibold text-[#16201B] mt-0.5">{selectedTender.issuer}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[#6E695F]">Region</dt>
+                      <dd className="font-semibold text-[#16201B] mt-0.5">{selectedTender.region || '—'}</dd>
+                    </div>
+                  </dl>
+                </div>
+
+                {selectedTender.locked ? (
+                  <div className="relative overflow-hidden rounded-xl border border-[#E5DFD5] bg-white">
+                    <div className="p-5 space-y-2 blur-[2.5px] select-none pointer-events-none opacity-50" aria-hidden="true">
+                      <p className="text-xs text-[#6E695F] leading-relaxed">
+                        Full notice text, submission address, and issuer contact details are reserved for subscribers.
+                        Full notice text, submission address, and issuer contact details are reserved for subscribers.
+                      </p>
+                      <p className="text-xs text-[#6E695F] leading-relaxed">
+                        Membership unlocks closing deadlines and the original notice link so you can bid with the issuer.
                       </p>
                     </div>
+                    <div className="absolute inset-0 flex items-center justify-center p-6 bg-gradient-to-b from-white/40 via-white/85 to-white">
+                      <div className="max-w-sm w-full rounded-xl border border-[#E5DFD5] bg-white p-5 shadow-sm text-center space-y-3">
+                        <LockKeyhole className="size-6 text-[#B45309] mx-auto" />
+                        <h3 className="text-sm font-bold text-[#16201B]">Become a member to get the full details</h3>
+                        <p className="text-[11px] text-[#6E695F]">
+                          Closing date, original notice link, and bidding details unlock after staff verifies your bank payment reference.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!currentUser) setIsLoginModalOpen(true)
+                            else navigateTo('profile')
+                          }}
+                          className="w-full rounded-lg bg-[#1B4332] py-2.5 text-xs font-bold text-white hover:bg-[#2D6A4F]"
+                        >
+                          {currentUser ? 'Subscribe from Profile' : 'Sign in to subscribe'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    onClick={() =>
-                      setActiveNoticeModal({
-                        refNumber: selectedTender.refNumber,
-                        gazette: selectedTender.gazette,
-                        title: selectedTender.title,
-                        issuer: selectedTender.issuer,
-                        cpoAmount: selectedTender.cpoAmount,
-                        closingDate: selectedTender.closeLabel,
-                        paragraphs: selectedTender.fullNoticeText,
-                        tenderBox: selectedTender.submissionAddress,
-                      })
-                    }
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#1B4332] text-xs font-semibold text-white hover:bg-[#2D6A4F] transition shrink-0"
-                  >
-                    <Eye className="size-3.5" />
-                    <span>Open official notice</span>
-                  </button>
-                </div>
+                ) : null}
               </div>
 
-              {/* Right Column (5 cols): Deadline, CPO, Bidding Instructions */}
-              <div className="lg:col-span-5 space-y-5">
-                {/* Deadline & CPO Box */}
-                <div className="rounded-xl bg-[#1B4332] text-white p-6 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between border-b border-white/15 pb-3">
-                    <span className="text-xs font-medium text-[#D8F3DC] flex items-center gap-1.5">
-                      <Clock3 className="size-3.5 text-[#D8F3DC]" />
-                      Closing Submission Deadline
-                    </span>
-                    <span className="rounded bg-[#2D6A4F] px-2 py-0.5 text-[11px] font-bold text-white border border-white/10">
-                      Active
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <strong className="block text-2xl font-extrabold tracking-tight">
-                      {selectedTender.closeLabel}
-                    </strong>
-                    <p className="text-xs text-[#D8F3DC]">
-                      Sealed proposals must be deposited into the designated tender box before this minute in East Africa Time (EAT).
-                    </p>
-                  </div>
-
-                  <div className="rounded-lg bg-[#143527] p-3.5 space-y-2 border border-white/10 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#D8F3DC]">CPO Bid Security:</span>
-                      <strong className="text-white font-bold">{selectedTender.cpoAmount}</strong>
-                    </div>
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-[#D8F3DC]">Document Fee:</span>
-                      <span className="text-white">{selectedTender.documentFee}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-white/10">
-                      <span className="text-[#D8F3DC]">Issuing Entity:</span>
-                      <span className="text-white truncate max-w-[180px]">{selectedTender.issuer}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bidding Instructions with Guest vs Subscriber Access */}
-                <div className="bg-white border border-[#E5DFD5] rounded-xl p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3">
-                    <div className="flex items-center gap-2">
-                      {isSubscriberUnlocked ? (
-                        <div className="p-1 rounded bg-[#EAF7EE] text-[#1B4332]">
-                          <Unlock className="size-4" />
-                        </div>
-                      ) : (
-                        <div className="p-1 rounded bg-[#FEF3C7] text-[#B45309]">
-                          <LockKeyhole className="size-4" />
-                        </div>
-                      )}
-                      <div>
-                        <h3 className="text-xs font-bold text-[#16201B]">
-                          {isSubscriberUnlocked
-                            ? 'Bidding Dossier Unlocked'
-                            : 'Subscriber Access Required'}
-                        </h3>
-                        <p className="text-[11px] text-[#6E695F]">
-                          {isSubscriberUnlocked ? 'Full submission guide active' : 'Guest preview mode'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => { if (!currentUser) setIsLoginModalOpen(true) }}
-                      className="text-xs font-semibold px-2.5 py-1 rounded-md border border-[#E5DFD5] bg-[#FAF8F5] hover:bg-[#EFECE6] text-[#1B4332] transition"
-                    >
-                      {isSubscriberUnlocked ? 'Switch to Guest' : 'Sign in for full access'}
-                    </button>
-                  </div>
-
-                  {/* If Guest Mode */}
-                  {!isSubscriberUnlocked ? (
-                    <div className="space-y-4">
-                      <p className="text-xs text-[#6E695F] leading-relaxed">
-                        Public guest mode shows basic eligibility and published notice. Downloadable Bill of Quantities (BOQ), financial schedule templates, and direct procurement officer extensions are reserved for subscribers.
-                      </p>
-                      <div className="space-y-2 text-xs">
-                        <div className="flex items-center justify-between p-2.5 rounded-lg border border-[#F0ECE1] bg-[#FAF8F5] text-[#6E695F]">
-                          <span className="flex items-center gap-2">
-                            <LockKeyhole className="size-3.5 text-[#B45309]" />
-                            Uneditable Financial Bid BOQ Schedule (.xlsx)
-                          </span>
-                          <span className="text-[10px] font-semibold text-[#B45309]">GATED</span>
-                        </div>
-                        <div className="flex items-center justify-between p-2.5 rounded-lg border border-[#F0ECE1] bg-[#FAF8F5] text-[#6E695F]">
-                          <span className="flex items-center gap-2">
-                            <LockKeyhole className="size-3.5 text-[#B45309]" />
-                            Direct Officer Contact & Clarifications Desk
-                          </span>
-                          <span className="text-[10px] font-semibold text-[#B45309]">GATED</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setIsSubscriberUnlocked(true)}
-                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#1B4332] text-white text-xs font-bold hover:bg-[#2D6A4F] transition shadow-xs"
-                      >
-                        <Unlock className="size-3.5" />
-                        <span>Sign in for full access</span>
-                      </button>
+              <div className="lg:col-span-5">
+                <div className="rounded-xl bg-[#1B4332] text-white p-6 shadow-sm space-y-3">
+                  <span className="text-xs font-medium text-[#D8F3DC] flex items-center gap-1.5">
+                    <Clock3 className="size-3.5" />
+                    Closing deadline (EAT)
+                  </span>
+                  {selectedTender.locked ? (
+                    <div className="space-y-2">
+                      <strong className="block text-xl font-extrabold tracking-tight text-[#FFE4CC]">Membership required</strong>
+                      <p className="text-xs text-[#D8F3DC]">Subscribe to unlock the closing time and original notice.</p>
                     </div>
                   ) : (
-                    /* If Subscriber Mode */
-                    <div className="space-y-4 animate-in fade-in duration-200">
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-bold text-[#1B4332] uppercase tracking-wider flex items-center gap-1.5">
-                          <CheckCircle2 className="size-3.5 text-[#1B4332]" />
-                          Step-by-Step Bidding Instructions
-                        </h4>
-                        <ol className="list-decimal list-inside text-xs text-[#6E695F] space-y-2 bg-[#FAF8F5] p-3 rounded-lg border border-[#EFECE6]">
-                          <li>
-                            Obtain <strong>{selectedTender.cpoAmount}</strong> Certified Payment Order (CPO) payable to <em>{selectedTender.issuer}</em>.
-                          </li>
-                          <li>
-                            Package in <strong>Double-Envelope</strong>: Envelope A (Technical, TIN, Trade License, CPO Bond) and Envelope B (Financial Bid Form).
-                          </li>
-                          <li>
-                            Deliver to: <strong>{selectedTender.submissionAddress}</strong> before {selectedTender.closeLabel}.
-                          </li>
-                        </ol>
-                      </div>
-
-                      <div className="rounded-lg bg-[#EAF7EE] border border-[#C8EAD1] p-3 text-xs space-y-1 text-[#1B4332]">
-                        <span className="font-bold flex items-center gap-1.5">
-                          <PhoneCall className="size-3.5" />
-                          Clarifications & Procurement Desk Contact
-                        </span>
-                        <p className="text-[11px] text-[#2D6A4F]">
-                          Officer: {selectedTender.contactPerson}
-                        </p>
-                      </div>
-
-                      <button
-                        onClick={() => showToast('Simulated Tender Dossier (.PDF) & BOQ (.XLSX) downloaded successfully.')}
-                        className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-[#1B4332] text-[#1B4332] text-xs font-bold hover:bg-[#EAF7EE] transition"
-                      >
-                        <Download className="size-3.5" />
-                        <span>Download Full Bid Dossier & BOQ</span>
-                      </button>
-                    </div>
+                    <>
+                      <strong className="block text-2xl font-extrabold tracking-tight">{selectedTender.closeLabel}</strong>
+                      <p className="text-xs text-[#D8F3DC]">Bid with the issuer using their published instructions — not on this website.</p>
+                    </>
                   )}
                 </div>
               </div>
@@ -1782,9 +1620,7 @@ export default function FanosPortal() {
         {/* VIEW 4: VEHICLES & MACHINERY GRID & DETAIL                     */}
         {/* ============================================================== */}
         {selectedVehicle ? (
-          /* Single Vehicle Lot Detail View (with Keys, Starter, Mileage) */
           <article className="space-y-6 animate-in fade-in duration-200">
-            {/* Back Row */}
             <div className="flex items-center justify-between border-b border-[#E5DFD5] pb-3">
               <button
                 onClick={() => setSelectedVehicle(null)}
@@ -1793,7 +1629,6 @@ export default function FanosPortal() {
                 <ArrowLeft className="size-4" />
                 <span>Back to Vehicle Auctions</span>
               </button>
-
               <button
                 onClick={() => toggleSaveVehicle(selectedVehicle.id)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition ${
@@ -1803,424 +1638,155 @@ export default function FanosPortal() {
                 }`}
               >
                 {savedVehicleIds.includes(selectedVehicle.id) ? (
-                  <>
-                    <BookmarkCheck className="size-3.5 fill-[#1B4332]" />
-                    <span>Saved</span>
-                  </>
+                  <><BookmarkCheck className="size-3.5 fill-[#1B4332]" /><span>Saved</span></>
                 ) : (
-                  <>
-                    <Bookmark className="size-3.5" />
-                    <span>Save Lot</span>
-                  </>
+                  <><Bookmark className="size-3.5" /><span>Save Lot</span></>
                 )}
               </button>
             </div>
 
-            {/* Save Microcopy Banner */}
-            {savedVehicleIds.includes(selectedVehicle.id) && (
-              <div className="rounded-lg bg-[#FBF9F4] border border-[#E8DFCF] p-2.5 text-[11px] text-[#6E695F] flex items-center gap-2">
-                <BookmarkCheck className="size-3.5 text-[#1B4332] shrink-0" />
-                <span>
-                  <strong>Saved to your browser list.</strong> Note: Saving bookmarks the lot for quick access and deadline tracking; subscriber access to full technical documents remains separate.
-                </span>
-              </div>
-            )}
-
-            {/* Title & Conditions Header */}
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-xs font-bold text-[#6E695F]">
-                  {selectedVehicle.id}
-                </span>
-                <span
-                  className={`px-2.5 py-0.5 rounded text-xs font-bold ${
-                    selectedVehicle.condition === 'Used'
-                      ? 'bg-[#1B4332] text-white'
-                      : 'bg-[#96422A] text-white'
-                  }`}
-                >
+                <span className={`px-2.5 py-0.5 rounded text-xs font-bold ${
+                  selectedVehicle.condition === 'Used' ? 'bg-[#1B4332] text-white' : 'bg-[#96422A] text-white'
+                }`}>
                   {selectedVehicle.conditionLabel}
                 </span>
-                <span className="text-xs text-[#6E695F] flex items-center gap-1">
-                  <MapPin className="size-3.5 text-[#8C571C]" />
-                  {selectedVehicle.regionLabel ?? selectedVehicle.region}
-                </span>
+                {selectedVehicle.region ? (
+                  <span className="text-xs text-[#6E695F] flex items-center gap-1">
+                    <MapPin className="size-3.5" />
+                    {selectedVehicle.region}
+                  </span>
+                ) : null}
+                <span className="text-xs font-semibold text-[#1B4332]">• Bidding open</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#16201B] tracking-tight">
-                {selectedVehicle.title}
-              </h1>
-              <p className="text-sm text-[#6E695F] max-w-3xl leading-relaxed">
-                {selectedVehicle.summary}
-              </p>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#16201B] tracking-tight">{selectedVehicle.title}</h1>
+              <p className="text-sm text-[#6E695F]">{selectedVehicle.issuer}</p>
+              {!selectedVehicle.locked && selectedVehicle.summary ? (
+                <p className="text-sm text-[#6E695F] max-w-3xl leading-relaxed whitespace-pre-wrap">{selectedVehicle.summary}</p>
+              ) : null}
             </div>
 
-            {/* 2-Column Lot Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              {/* Left Column (7 cols): Gallery + Specs (Keys, Starter, Mileage) */}
               <div className="lg:col-span-7 space-y-6">
-                {/* Photo Gallery Box */}
                 <div className="space-y-3">
-                  <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] rounded-xl overflow-hidden bg-[#E8E4DA] border border-[#E5DFD5] shadow-xs">
+                  {selectedVehicle.mainImage ? (
+                    <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] rounded-xl overflow-hidden bg-[#E8E4DA] border border-[#E5DFD5]">
                       <Image
-                      unoptimized
-                      src={
-                        !isSubscriberUnlocked
-                          ? selectedVehicle.mainImage || '/sedan-demo.webp'
-                          : selectedVehicle.gallery[activeVehiclePhotoIndex]?.src || selectedVehicle.mainImage || '/sedan-demo.webp'
-                      }
-                      alt={
-                        !isSubscriberUnlocked
-                          ? `Public cover photo of ${selectedVehicle.title}`
-                          : selectedVehicle.gallery[activeVehiclePhotoIndex]?.caption || selectedVehicle.title
-                      }
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 60vw"
-                      className="object-cover transition duration-300"
-                      priority
-                    />
-
-                    {/* Mode Tag */}
-                    {!isSubscriberUnlocked ? (
-                      <div className="absolute top-2.5 left-2.5 bg-black/75 backdrop-blur-xs text-white text-[11px] font-semibold px-2.5 py-1 rounded-md flex items-center gap-1.5">
-                        <LockKeyhole className="size-3 text-[#E0B263]" />
-                        <span>Public Cover (Guest Mode)</span>
-                      </div>
-                    ) : (
-                      <div className="absolute top-2.5 left-2.5 bg-[#1B4332]/90 backdrop-blur-xs text-white text-[11px] font-semibold px-2.5 py-1 rounded-md flex items-center gap-1.5">
-                        <CheckCircle2 className="size-3 text-white" />
-                        <span>Full Gallery Unlocked</span>
-                      </div>
-                    )}
-
-                    <div className="absolute bottom-2 left-2 right-2 bg-black/65 backdrop-blur-xs text-white text-xs px-3 py-1.5 rounded-lg flex items-center justify-between">
-                      <span className="truncate">
-                        {!isSubscriberUnlocked
-                          ? 'Public cover photo'
-                          : selectedVehicle.gallery[activeVehiclePhotoIndex]?.caption}
-                      </span>
-                      <span className="shrink-0 text-[11px] text-white/80 font-mono">
-                        {!isSubscriberUnlocked ? '1 of 1 shown' : `${activeVehiclePhotoIndex + 1} of ${selectedVehicle.gallery.length}`}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Thumbnails Row: Accessible & Selectable in Subscriber Mode */}
-                  {isSubscriberUnlocked ? (
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs text-[#6E695F]">
-                        <span className="font-semibold text-[#1B4332] flex items-center gap-1">
-                          <Eye className="size-3.5" />
-                          Selectable Inspection Views (Click to inspect)
-                        </span>
-                        <span className="text-[11px]">{selectedVehicle.gallery.length} Photos Available</span>
-                      </div>
-                      <div className="grid grid-cols-4 gap-2.5">
-                        {selectedVehicle.gallery.map((item, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => setActiveVehiclePhotoIndex(idx)}
-                            className={`relative aspect-[16/10] rounded-lg overflow-hidden border-2 transition focus:outline-hidden ${
-                              activeVehiclePhotoIndex === idx
-                                ? 'border-[#1B4332] ring-2 ring-[#1B4332]/20'
-                                : 'border-[#E5DFD5] opacity-75 hover:opacity-100'
-                            }`}
-                            aria-label={`Select photo ${idx + 1}: ${item.caption}`}
-                          >
-                            <Image unoptimized src={item.src} alt={item.caption} fill sizes="150px" className="object-cover" />
-                          </button>
-                        ))}
-                      </div>
+                        unoptimized
+                        src={selectedVehicle.gallery[activeVehiclePhotoIndex]?.src || selectedVehicle.mainImage}
+                        alt={selectedVehicle.title}
+                        fill
+                        sizes="(max-width: 1024px) 100vw, 60vw"
+                        className="object-cover"
+                        priority
+                      />
                     </div>
                   ) : (
-                    /* Guest Mode: Extra Photos Locked */
-                    <div className="rounded-xl border border-[#E5DFD5] bg-white p-3.5 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#8C571C] flex items-center gap-1.5">
-                          <LockKeyhole className="size-3.5 text-[#8C571C]" />
-                          Extra Inspection Photos Gated ({selectedVehicle.gallery.length - 1} Restricted)
-                        </span>
-                        <button
-                          onClick={() => setIsSubscriberUnlocked(true)}
-                          className="text-xs font-bold text-[#1B4332] hover:underline"
-                        >
-                          Sign in for full access
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-4 gap-2.5 opacity-60">
-                        <div className="relative aspect-[16/10] rounded-lg overflow-hidden border-2 border-[#1B4332]">
-                          <Image unoptimized src={selectedVehicle.mainImage} alt="Cover" fill sizes="120px" className="object-cover" />
-                        </div>
-                        {selectedVehicle.gallery.slice(1).map((_, index) => (
-                          <div
-                            key={index}
-                            className="relative aspect-[16/10] rounded-lg bg-[#EEEAE0] border border-[#E5DFD5] flex flex-col items-center justify-center text-center p-1"
-                          >
-                            <LockKeyhole className="size-3.5 text-[#8C571C] mb-0.5" />
-                            <span className="text-[10px] font-bold text-[#8C571C]">Photo {index + 2}</span>
-                            <span className="text-[9px] text-[#6E695F]">Subscriber</span>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-[11px] text-[#6E695F]">
-                        Guest mode shows public cover only. Toggle &quot;View as demo subscriber&quot; below to reveal engine, cabin, and chassis photography.
-                      </p>
+                    <div className="rounded-xl border border-dashed border-[#E5DFD5] bg-[#FAF8F5] p-10 text-center text-xs text-[#6E695F]">
+                      No authorized photo published for this lot yet.
                     </div>
                   )}
+
+                  {!selectedVehicle.locked && selectedVehicle.gallery.length > 1 ? (
+                    <div className="grid grid-cols-4 gap-2.5">
+                      {selectedVehicle.gallery.map((item, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setActiveVehiclePhotoIndex(idx)}
+                          className={`relative aspect-[16/10] rounded-lg overflow-hidden border-2 ${
+                            activeVehiclePhotoIndex === idx ? 'border-[#1B4332]' : 'border-[#E5DFD5]'
+                          }`}
+                        >
+                          <Image unoptimized src={item.src} alt={item.caption} fill sizes="150px" className="object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {selectedVehicle.locked ? (
+                    <div className="rounded-xl border border-[#E5DFD5] bg-white p-4 space-y-3">
+                      <p className="text-xs text-[#6E695F] flex items-center gap-2">
+                        <LockKeyhole className="size-3.5 text-[#B45309]" />
+                        Closing date, yard location, extra photos, and bidding instructions require membership.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!currentUser) setIsLoginModalOpen(true)
+                          else navigateTo('profile')
+                        }}
+                        className="w-full rounded-lg bg-[#1B4332] py-2.5 text-xs font-bold text-white hover:bg-[#2D6A4F]"
+                      >
+                        {currentUser ? 'Subscribe from Profile' : 'Sign in to subscribe'}
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
 
-                {/* Technical Profile Table (with Keys, Starter, Mileage) */}
-                <div className="bg-white border border-[#E5DFD5] rounded-xl p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3">
-                    <h2 className="text-sm font-bold text-[#16201B] flex items-center gap-2">
-                      <Layers className="size-4 text-[#1B4332]" />
-                      Vehicle Technical Profile & Physical State
-                    </h2>
-                    <span className="text-[11px] font-mono text-[#6E695F]">
-                      LOT REF #{selectedVehicle.id}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 text-xs">
-                    {/* Keys */}
-                    <div className="p-3 rounded-lg bg-[#FAF8F5] border border-[#EFECE6] sm:col-span-1">
-                      <span className="text-[#6E695F] block text-[11px] flex items-center gap-1">
-                        <Key className="size-3 text-[#1B4332]" />
-                        Keys Available
-                      </span>
-                      <strong className="text-[#16201B] text-xs font-bold block mt-0.5">
-                        {selectedVehicle.keys}
-                      </strong>
-                    </div>
-
-                    {/* Starter */}
-                    <div className="p-3 rounded-lg bg-[#FAF8F5] border border-[#EFECE6] sm:col-span-1">
-                      <span className="text-[#6E695F] block text-[11px] flex items-center gap-1">
-                        <Zap className="size-3 text-[#1B4332]" />
-                        Starter Condition
-                      </span>
-                      <strong className="text-[#16201B] text-xs font-bold block mt-0.5">
-                        {selectedVehicle.starter}
-                      </strong>
-                    </div>
-
-                    {/* Mileage */}
-                    <div className="p-3 rounded-lg bg-[#FAF8F5] border border-[#EFECE6] sm:col-span-1">
-                      <span className="text-[#6E695F] block text-[11px] flex items-center gap-1">
-                        <Gauge className="size-3 text-[#1B4332]" />
-                        Odometer Mileage
-                      </span>
-                      <strong className="text-[#16201B] text-xs font-bold block mt-0.5">
-                        {selectedVehicle.mileage}
-                      </strong>
-                    </div>
-
-                    {/* Year */}
-                    <div className="p-3 rounded-lg bg-[#FAF8F5] border border-[#EFECE6]">
-                      <span className="text-[#6E695F] block text-[11px]">Model Year</span>
-                      <strong className="text-[#16201B] text-xs font-bold block mt-0.5">
-                        {selectedVehicle.year}
-                      </strong>
-                    </div>
-
-                    {/* Fuel */}
-                    <div className="p-3 rounded-lg bg-[#FAF8F5] border border-[#EFECE6]">
-                      <span className="text-[#6E695F] block text-[11px]">Fuel Type</span>
-                      <strong className="text-[#16201B] text-xs font-bold block mt-0.5">
-                        {selectedVehicle.fuelType}
-                      </strong>
-                    </div>
-
-                    {/* Transmission */}
-                    <div className="p-3 rounded-lg bg-[#FAF8F5] border border-[#EFECE6]">
-                      <span className="text-[#6E695F] block text-[11px]">Transmission</span>
-                      <strong className="text-[#16201B] text-xs font-bold block mt-0.5">
-                        {selectedVehicle.transmission}
-                      </strong>
-                    </div>
-
-                    {/* Plate & Duty */}
-                    <div className="p-3 rounded-lg bg-[#FAF8F5] border border-[#EFECE6] sm:col-span-3">
-                      <span className="text-[#6E695F] block text-[11px]">Plate & Duty Status</span>
-                      <strong className="text-[#16201B] text-xs font-semibold block mt-0.5">
-                        {selectedVehicle.plateStatus}
-                      </strong>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-[#F0ECE1] text-xs text-[#6E695F] flex items-start gap-2">
-                    <Building2 className="size-4 text-[#1B4332] shrink-0 mt-0.5" />
+                <div className="bg-white border border-[#E5DFD5] rounded-xl p-5 shadow-xs space-y-3">
+                  <h2 className="text-sm font-bold text-[#16201B] border-b border-[#F0ECE1] pb-2.5">Lot facts</h2>
+                  <dl className="grid grid-cols-2 gap-3 text-xs">
+                    {selectedVehicle.make ? <div><dt className="text-[#6E695F]">Make</dt><dd className="font-semibold text-[#16201B]">{selectedVehicle.make}</dd></div> : null}
+                    {selectedVehicle.model ? <div><dt className="text-[#6E695F]">Model</dt><dd className="font-semibold text-[#16201B]">{selectedVehicle.model}</dd></div> : null}
+                    {selectedVehicle.year ? <div><dt className="text-[#6E695F]">Year</dt><dd className="font-semibold text-[#16201B]">{selectedVehicle.year}</dd></div> : null}
                     <div>
-                      <span className="font-semibold text-[#16201B] block">
-                        Disposal Custodian: {selectedVehicle.issuer}
-                      </span>
-                      <span>Physical Yard: {selectedVehicle.yardLocation}</span>
+                      <dt className="text-[#6E695F]">Yard location</dt>
+                      <dd className="mt-0.5">{selectedVehicle.locked ? <MembershipRequired /> : <span className="font-semibold text-[#16201B]">{selectedVehicle.yardLocation || '—'}</span>}</dd>
                     </div>
-                  </div>
+                    <div>
+                      <dt className="text-[#6E695F]">Closing date</dt>
+                      <dd className="mt-0.5"><ClosingField locked={selectedVehicle.locked} closeLabel={selectedVehicle.closeLabel} /></dd>
+                    </div>
+                    <div><dt className="text-[#6E695F]">Issuer</dt><dd className="font-semibold text-[#16201B]">{selectedVehicle.issuer}</dd></div>
+                  </dl>
                 </div>
               </div>
 
-              {/* Right Column (5 cols): Deadline + Gated Bidding Instructions */}
               <div className="lg:col-span-5 space-y-5">
-                {/* Deadline & CPO Bond Card */}
-                <div className="rounded-xl bg-[#1B4332] text-white p-6 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between border-b border-white/15 pb-3">
-                    <span className="text-xs font-medium text-[#D8F3DC] flex items-center gap-1.5">
-                      <Clock3 className="size-3.5 text-[#D8F3DC]" />
-                      Tender Closing Deadline
-                    </span>
-                    <span className="rounded bg-[#2D6A4F] px-2 py-0.5 text-[11px] font-bold text-white border border-white/10">
-                      Active Auction
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <strong className="block text-2xl font-extrabold tracking-tight">
-                      {selectedVehicle.closeLabel}
-                    </strong>
-                    <p className="text-xs text-[#D8F3DC]">
-                      Strict deadline. All submissions must be received before this hour in East Africa Time (EAT / UTC+3).
-                    </p>
-                  </div>
-
-                  <div className="rounded-lg bg-[#143527] p-3.5 space-y-2 border border-white/10 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#D8F3DC]">Required CPO Bid Bond:</span>
-                      <strong className="text-white font-bold">{selectedVehicle.cpoBond}</strong>
-                    </div>
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-[#D8F3DC]">Estimated Reserve:</span>
-                      <span className="text-white">{selectedVehicle.estimatedReserve}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Working Access Panel: Sign in for full access Toggle */}
-                <div className="bg-white border border-[#E5DFD5] rounded-xl p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3">
-                    <div className="flex items-center gap-2">
-                      {isSubscriberUnlocked ? (
-                        <div className="p-1 rounded bg-[#EAF7EE] text-[#1B4332]">
-                          <Unlock className="size-4" />
-                        </div>
-                      ) : (
-                        <div className="p-1 rounded bg-[#FEF3C7] text-[#8C571C]">
-                          <LockKeyhole className="size-4" />
-                        </div>
-                      )}
-                      <div>
-                        <h3 className="text-xs font-bold text-[#16201B]">
-                          {isSubscriberUnlocked ? 'Subscriber Dossier Unlocked' : 'Subscriber Access Gated'}
-                        </h3>
-                        <p className="text-[11px] text-[#6E695F]">
-                          {isSubscriberUnlocked
-                            ? 'Full inspection reports & bidding instructions active'
-                            : 'Public guest mode active'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => { if (!currentUser) setIsLoginModalOpen(true) }}
-                      className="text-xs font-semibold px-2.5 py-1 rounded-md border border-[#E5DFD5] bg-[#FAF8F5] hover:bg-[#EFECE6] text-[#1B4332] transition"
-                    >
-                      {isSubscriberUnlocked ? 'Switch to Guest' : 'Sign in for full access'}
-                    </button>
-                  </div>
-
-                  {!isSubscriberUnlocked ? (
-                    <div className="space-y-4">
-                      <p className="text-xs text-[#6E695F] leading-relaxed">
-                        Public visitors can see basic specs. Mechanical diagnostic reports, yard gate passes, and CBE bank CPO instructions are gated.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setIsSubscriberUnlocked(true)}
-                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#1B4332] text-white text-xs font-bold hover:bg-[#2D6A4F] transition shadow-xs"
-                      >
-                        <Unlock className="size-3.5" />
-                        <span>Sign in for full access</span>
-                      </button>
-                    </div>
+                <div className="rounded-xl bg-[#1B4332] text-white p-6 shadow-sm space-y-3">
+                  <span className="text-xs font-medium text-[#D8F3DC] flex items-center gap-1.5">
+                    <Clock3 className="size-3.5" />
+                    Closing deadline (EAT)
+                  </span>
+                  {selectedVehicle.locked ? (
+                    <strong className="block text-xl font-extrabold tracking-tight text-[#FFE4CC]">Membership required</strong>
                   ) : (
-                    <div className="space-y-4 animate-in fade-in duration-200">
-                      {/* Diagnostic sheet */}
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-bold text-[#1B4332] uppercase tracking-wider flex items-center gap-1.5">
-                          <CheckCircle2 className="size-3.5 text-[#1B4332]" />
-                          Mechanical Inspection Report
-                        </h4>
-                        <div className="rounded-lg bg-[#FAF8F5] border border-[#E5DFD5] p-3 text-xs space-y-2">
-                          <div>
-                            <span className="font-semibold text-[#16201B] block">Engine Diagnostic:</span>
-                            <span className="text-[#6E695F]">{selectedVehicle.inspectionReport.engine}</span>
-                          </div>
-                          <div>
-                            <span className="font-semibold text-[#16201B] block">Gearbox & Drivetrain:</span>
-                            <span className="text-[#6E695F]">{selectedVehicle.inspectionReport.gearbox}</span>
-                          </div>
-                          <div>
-                            <span className="font-semibold text-[#16201B] block">Chassis & Body:</span>
-                            <span className="text-[#6E695F]">{selectedVehicle.inspectionReport.bodyFrame}</span>
-                          </div>
-                          <div>
-                            <span className="font-semibold text-[#16201B] block">Interior & Equipment:</span>
-                            <span className="text-[#6E695F]">{selectedVehicle.inspectionReport.interior}</span>
-                          </div>
-                          <div>
-                            <span className="font-semibold text-[#16201B] block">Tyre Wear:</span>
-                            <span className="text-[#6E695F]">{selectedVehicle.inspectionReport.tyres}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Direct Logistics Gatekeeper Contact */}
-                      <div className="rounded-lg bg-[#EAF7EE] border border-[#C8EAD1] p-3 text-xs space-y-1 text-[#1B4332]">
-                        <div className="font-bold flex items-center gap-1.5">
-                          <PhoneCall className="size-3.5 text-[#1B4332]" />
-                          Inspection Gate Pass Officer
-                        </div>
-                        <p className="text-[11px] text-[#2D6A4F]">
-                          Contact: <strong>{selectedVehicle.contactPerson}</strong>
-                        </p>
-                        <p className="text-[11px] text-[#2D6A4F]">
-                          Visiting Hours: {selectedVehicle.visitingHours}
-                        </p>
-                      </div>
-
-                      {/* Bidding Instructions */}
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-bold text-[#16201B] uppercase tracking-wider flex items-center gap-1.5">
-                          <FileCheck2 className="size-3.5 text-[#1B4332]" />
-                          Bidding Submission Instructions
-                        </h4>
-                        <ol className="list-decimal list-inside text-xs text-[#6E695F] space-y-1.5 bg-[#FAF8F5] p-3 rounded-lg border border-[#EFECE6]">
-                          <li>
-                            Obtain <strong>{selectedVehicle.cpoBond}</strong> CPO from Commercial Bank of Ethiopia (CBE) payable to <em>{selectedVehicle.issuer}</em>.
-                          </li>
-                          <li>
-                            Place original CPO into sealed envelope marked <em>&quot;Bid Bond - {selectedVehicle.id}&quot;</em>.
-                          </li>
-                          <li>
-                            Submit price schedule in second envelope marked <em>&quot;Financial Offer&quot;</em>.
-                          </li>
-                          <li>
-                            Deliver both to Tender Box at {selectedVehicle.yardLocation} before <strong>{selectedVehicle.closeLabel}</strong>.
-                          </li>
-                        </ol>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setIsSubscriberUnlocked(false)}
-                        className="w-full text-center py-2 text-xs text-[#6E695F] hover:text-[#16201B] underline"
-                      >
-                        Switch Back to Guest Mode
-                      </button>
-                    </div>
+                    <strong className="block text-2xl font-extrabold tracking-tight">{selectedVehicle.closeLabel}</strong>
                   )}
+                  <p className="text-xs text-[#D8F3DC]">Bid with the issuer — not on this website.</p>
                 </div>
+
+                {!selectedVehicle.locked ? (
+                  <div className="bg-white border border-[#E5DFD5] rounded-xl p-5 shadow-xs space-y-4">
+                    {selectedVehicle.instructions ? (
+                      <div className="space-y-2">
+                        <h3 className="text-xs font-bold text-[#16201B]">Verified bidding instructions</h3>
+                        <p className="text-xs text-[#6E695F] whitespace-pre-wrap leading-relaxed">{selectedVehicle.instructions}</p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-[#6E695F]">No bidding instructions were published for this lot yet.</p>
+                    )}
+                    {selectedVehicle.inspection ? (
+                      <div className="space-y-2 border-t border-[#F0ECE1] pt-3">
+                        <h3 className="text-xs font-bold text-[#16201B]">Inspection notes</h3>
+                        <p className="text-xs text-[#6E695F] whitespace-pre-wrap leading-relaxed">{selectedVehicle.inspection}</p>
+                      </div>
+                    ) : null}
+                    {selectedVehicle.sourceUrl ? (
+                      <a
+                        href={selectedVehicle.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1B4332] hover:underline"
+                      >
+                        <ExternalLink className="size-3.5" />
+                        Open original notice
+                      </a>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </div>
           </article>
@@ -2437,13 +2003,13 @@ export default function FanosPortal() {
 
                           {/* Quick Spec Pills: Keys, Starter, Mileage */}
                           <div className="grid grid-cols-3 gap-1.5 text-[10px] bg-[#FAF8F5] p-2 rounded-lg border border-[#EFECE6]">
-                            <div className="truncate" title={lot.keys}>
+                            <div className="truncate" title={[lot.make, lot.model].filter(Boolean).join(' ') || '—'}>
                               <span className="text-[#6E695F] block">Keys</span>
-                              <strong className="text-[#16201B] truncate block">{lot.keys}</strong>
+                              <strong className="text-[#16201B] truncate block">{[lot.make, lot.model].filter(Boolean).join(' ') || '—'}</strong>
                             </div>
-                            <div className="truncate" title={lot.starter}>
+                            <div className="truncate" title={lot.year || lot.mileage || "—"}>
                               <span className="text-[#6E695F] block">Starter</span>
-                              <strong className="text-[#16201B] truncate block">{lot.starter}</strong>
+                              <strong className="text-[#16201B] truncate block">{lot.year || lot.mileage || "—"}</strong>
                             </div>
                             <div className="truncate" title={lot.mileage}>
                               <span className="text-[#6E695F] block">Mileage</span>
@@ -2465,10 +2031,10 @@ export default function FanosPortal() {
                           <div className="mt-auto pt-3 border-t border-[#F0ECE1] flex items-center justify-between text-xs">
                             <div className="flex items-center gap-1.5 text-[#16201B]">
                               <Clock3 className="size-3.5 text-[#B84A2B] shrink-0" />
-                              <span className="font-semibold">{lot.closeLabel}</span>
+                              <ClosingField locked={lot.locked} closeLabel={lot.closeLabel} />
                             </div>
                             <span className="text-[#1B4332] font-bold">
-                              CPO: {lot.cpoBond}
+                              {lot.access === 'paid' ? (lot.locked ? 'Membership' : 'Paid') : 'Free'}
                             </span>
                           </div>
                         </div>
@@ -2613,7 +2179,7 @@ export default function FanosPortal() {
                             <p className="text-xs text-[#6E695F] line-clamp-1">{lot.yardLocation}</p>
                           </div>
                           <div className="mt-3 pt-2 border-t border-[#F0ECE1] flex items-center justify-between text-xs">
-                            <span className="text-[#B84A2B] font-semibold">{lot.closeLabel}</span>
+                            <ClosingField locked={lot.locked} closeLabel={lot.closeLabel} />
                             <button
                               onClick={() => openVehicleDetail(lot)}
                               className="text-[#1B4332] font-bold hover:underline"
@@ -2661,7 +2227,7 @@ export default function FanosPortal() {
                             <p className="text-xs text-[#6E695F] line-clamp-1">{tender.issuer}</p>
                           </div>
                           <div className="mt-3 pt-2 border-t border-[#F0ECE1] flex items-center justify-between text-xs">
-                            <span className="text-[#B84A2B] font-semibold">{tender.closeLabel}</span>
+                            <ClosingField locked={tender.locked} closeLabel={tender.closeLabel} />
                             <button
                               onClick={() => openTenderDetail(tender)}
                               className="text-[#1B4332] font-bold hover:underline"
@@ -3012,32 +2578,44 @@ export default function FanosPortal() {
                 {plans?.instructions ? (
                   <p className="text-[11px] whitespace-pre-wrap rounded-lg bg-[#FAF8F5] border border-[#EFECE6] p-3 text-[#16201B]">{plans.instructions}</p>
                 ) : null}
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <select
-                    value={paymentTerm}
-                    onChange={(e) => setPaymentTerm(e.target.value)}
-                    className="rounded-lg border border-[#E5DFD5] bg-[#FAF8F5] px-3 py-2 text-xs"
-                  >
-                    {(plans?.plans || [{ months: 1 }, { months: 3 }, { months: 6 }, { months: 12 }]).map((plan: any) => (
-                      <option key={plan.months} value={String(plan.months)}>
-                        {plan.months} month{plan.months > 1 ? 's' : ''}{plan.price ? ` · ${plan.price} ETB` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    value={paymentReference}
-                    onChange={(e) => setPaymentReference(e.target.value)}
-                    placeholder="Bank reference"
-                    className="flex-1 rounded-lg border border-[#E5DFD5] bg-[#FAF8F5] px-3 py-2 text-xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void submitPaymentReference()}
-                    className="rounded-lg bg-[#1B4332] px-3 py-2 text-xs font-bold text-white hover:bg-[#2D6A4F]"
-                  >
-                    Submit
-                  </button>
-                </div>
+                {(() => {
+                  const pricedPlans = (plans?.plans || []).filter((plan: any) => plan.price)
+                  if (!pricedPlans.length || !plans?.instructions) {
+                    return (
+                      <p className="text-[11px] text-[#6E695F]" role="status">
+                        Payment submission opens after staff publish plan prices and bank instructions.
+                      </p>
+                    )
+                  }
+                  return (
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <select
+                        value={paymentTerm}
+                        onChange={(e) => setPaymentTerm(e.target.value)}
+                        className="rounded-lg border border-[#E5DFD5] bg-[#FAF8F5] px-3 py-2 text-xs"
+                      >
+                        {pricedPlans.map((plan: any) => (
+                          <option key={plan.months} value={String(plan.months)}>
+                            {plan.months} month{plan.months > 1 ? 's' : ''} · {plan.price} ETB
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        value={paymentReference}
+                        onChange={(e) => setPaymentReference(e.target.value)}
+                        placeholder="Bank reference"
+                        className="flex-1 rounded-lg border border-[#E5DFD5] bg-[#FAF8F5] px-3 py-2 text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void submitPaymentReference()}
+                        className="rounded-lg bg-[#1B4332] px-3 py-2 text-xs font-bold text-white hover:bg-[#2D6A4F]"
+                      >
+                        Submit
+                      </button>
+                    </div>
+                  )
+                })()}
                 {payments.length > 0 && (
                   <ul className="space-y-1.5 text-[11px] text-[#6E695F]">
                     {payments.slice(0, 5).map((payment) => (
@@ -3117,22 +2695,20 @@ export default function FanosPortal() {
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in"
             role="dialog"
             aria-modal="true"
-            aria-label="Official Gazette Notice Document"
+            aria-label="Notice summary"
           >
             <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#E5DFD5] p-6 sm:p-8 space-y-6">
               <div className="flex items-start justify-between border-b border-[#E5DFD5] pb-4">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                  {activeNoticeModal.refNumber ? (
                     <span className="text-[11px] font-mono font-bold text-[#1B4332] tracking-wide">
                       {activeNoticeModal.refNumber}
                     </span>
-                    <span className="text-[11px] text-[#6E695F]">
-                      Gazette: {activeNoticeModal.gazette}
-                    </span>
-                  </div>
+                  ) : null}
                   <h3 className="text-base sm:text-lg font-bold text-[#16201B]">
                     {activeNoticeModal.title}
                   </h3>
+                  <p className="text-xs text-[#6E695F]">{activeNoticeModal.issuer}</p>
                 </div>
                 <button
                   onClick={() => setActiveNoticeModal(null)}
@@ -3143,58 +2719,31 @@ export default function FanosPortal() {
                 </button>
               </div>
 
-              {/* Gazette Document Text */}
-              <div className="rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] p-5 space-y-4 text-xs text-[#16201B] font-serif leading-relaxed">
-                <div className="text-center border-b border-[#E5DFD5] pb-3 space-y-0.5 font-sans">
-                  <span className="text-[10px] tracking-widest uppercase font-bold text-[#6E695F] block">
-                    Federal Democratic Republic of Ethiopia
-                  </span>
-                  <strong className="text-sm font-extrabold text-[#1B4332] block">
-                    {activeNoticeModal.issuer}
-                  </strong>
-                  <span className="text-[11px] text-[#6E695F]">
-                    Public Procurement & Asset Disposal Notice
-                  </span>
-                </div>
-
-                <div className="space-y-2.5">
-                  {activeNoticeModal.paragraphs.map((para, idx) => (
-                    <p key={idx}>{para}</p>
-                  ))}
-                </div>
-
-                <div className="pt-3 border-t border-[#E5DFD5] font-sans text-xs space-y-1 bg-white p-3 rounded-lg">
-                  <div className="flex justify-between">
-                    <span className="text-[#6E695F]">Required CPO Bid Security:</span>
-                    <strong className="text-[#1B4332] font-bold">{activeNoticeModal.cpoAmount}</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#6E695F]">Closing Date & Hour:</span>
-                    <strong className="text-[#B84A2B] font-bold">{activeNoticeModal.closingDate}</strong>
-                  </div>
-                  {activeNoticeModal.tenderBox && (
-                    <div className="flex justify-between text-[11px]">
-                      <span className="text-[#6E695F]">Submission Box:</span>
-                      <span className="text-[#16201B]">{activeNoticeModal.tenderBox}</span>
-                    </div>
-                  )}
+              <div className="rounded-xl bg-[#FAF8F5] border border-[#E5DFD5] p-5 space-y-3 text-xs text-[#16201B] leading-relaxed">
+                {activeNoticeModal.paragraphs.map((para, idx) => (
+                  <p key={idx} className="whitespace-pre-wrap">{para}</p>
+                ))}
+                <div className="pt-3 border-t border-[#E5DFD5] flex justify-between gap-3">
+                  <span className="text-[#6E695F]">Closes (EAT)</span>
+                  <strong className="text-[#B84A2B]">{activeNoticeModal.closingDate || '—'}</strong>
                 </div>
               </div>
 
-              {/* Modal Actions */}
               <div className="flex items-center justify-between gap-3 pt-2">
-                <button
-                  onClick={() => {
-                    window.print()
-                  }}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#E5DFD5] bg-[#FAF8F5] text-xs font-semibold text-[#1B4332] hover:bg-[#EAF7EE] transition"
-                >
-                  <Printer className="size-3.5" />
-                  <span>Print notice</span>
-                </button>
+                {activeNoticeModal.sourceUrl ? (
+                  <a
+                    href={activeNoticeModal.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#E5DFD5] bg-[#FAF8F5] text-xs font-semibold text-[#1B4332] hover:bg-[#EAF7EE]"
+                  >
+                    <ExternalLink className="size-3.5" />
+                    Open original notice
+                  </a>
+                ) : <span />}
                 <button
                   onClick={() => setActiveNoticeModal(null)}
-                  className="px-4 py-2 rounded-lg bg-[#1B4332] text-white text-xs font-bold hover:bg-[#2D6A4F] transition"
+                  className="px-4 py-2 rounded-lg bg-[#1B4332] text-white text-xs font-bold hover:bg-[#2D6A4F]"
                 >
                   Done
                 </button>
@@ -3203,9 +2752,15 @@ export default function FanosPortal() {
           </div>
         )}
         {!selectedVehicle && !selectedTender && activeTab === 'home' && (
-          <div className="[--green:#1B4332] [--paper:#FAF8F5] [--line:#E5DFD5] [--mint:#EAF7EE]">
-            <HomePricing plans={plans} onSelect={(months: number) => { setPaymentTerm(String(months)); navigateTo('profile'); if (!currentUser) setIsLoginModalOpen(true); else showToast('Submit your bank reference from Profile after transfer.'); }} />
-          </div>
+          <HomePricing
+            plans={plans}
+            onSelect={(months: number) => {
+              setPaymentTerm(String(months))
+              navigateTo('profile')
+              if (!currentUser) setIsLoginModalOpen(true)
+              else showToast('Submit your bank reference from Profile after transfer.')
+            }}
+          />
         )}
       </main>
 

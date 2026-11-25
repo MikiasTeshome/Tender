@@ -9,10 +9,11 @@ const closeFmt = new Intl.DateTimeFormat('en-ET', {
 });
 
 export function formatClose(iso) {
+  if (!iso) return '';
   try {
     return closeFmt.format(new Date(iso)) + ' EAT';
   } catch {
-    return iso || '—';
+    return '';
   }
 }
 
@@ -73,59 +74,47 @@ function text(value) {
 
 export function mapVehicle(item) {
   const d = item.details || {};
-  const photoIds = item.photos?.length ? item.photos : item.cover ? [item.cover] : [];
+  const locked = !!item.locked;
+  const photoIds = locked
+    ? (item.cover ? [item.cover] : [])
+    : (item.photos?.length ? item.photos : item.cover ? [item.cover] : []);
   const gallery = photoIds.map((id, index) => ({
     src: photoUrl(id),
     caption: text(d.captions?.[index]) || `Photo ${index + 1}`,
   }));
-  const conditionRaw = text(d.condition).toLowerCase();
+  const conditionRaw = text(d.condition || item.condition).toLowerCase();
   const condition = conditionRaw === 'damaged' || conditionRaw === 'salvage' ? 'Damaged' : 'Used';
   return {
     id: item.id,
     title: item.title,
     condition,
-    conditionLabel: text(d.condition) || condition,
+    conditionLabel: text(d.condition || item.condition) || condition,
     region: text(item.region),
     regionLabel: text(item.region),
-    yardLocation: text(d.location) || text(item.region),
+    yardLocation: locked ? '' : (text(d.location) || text(item.region)),
     issuer: text(item.issuer),
-    closeIso: item.deadline,
-    closeLabel: formatClose(item.deadline),
+    closeIso: locked ? '' : (item.deadline || ''),
+    closeLabel: locked ? '' : formatClose(item.deadline),
     year: Number(d.year) || 0,
-    mileage: d.mileage ? String(d.mileage) : '—',
+    mileage: locked ? '' : text(d.mileage),
     make: text(d.make),
     model: text(d.model),
-    keys: d.keys || '—',
-    starter: d.starter || '—',
-    fuelType: d.fuel || d.fuelType || '—',
-    transmission: d.transmission || '—',
-    plateStatus: d.plate || d.plateStatus || '—',
-    summary: d.description || d.summary || item.title,
-    instructions: text(d.instructions),
-    inspection: text(d.inspection),
-    sourceUrl: text(d.sourceUrl),
+    summary: locked ? '' : text(d.description),
+    instructions: locked ? '' : text(d.instructions),
+    inspection: locked ? '' : text(d.inspection),
+    sourceUrl: locked ? '' : text(d.sourceUrl),
+    noticeRef: text(d.reference) || text(d.lot),
     lot: text(d.lot),
-    inspectionReport: {
-      engine: d.engine || '—',
-      gearbox: d.gearbox || '—',
-      bodyFrame: d.body || d.bodyFrame || '—',
-      interior: d.interior || '—',
-      tyres: d.tyres || '—',
-    },
-    contactPerson: d.contact || 'See notice',
-    visitingHours: d.visitingHours || '—',
-    // Keep missing photos as a real empty state for the public cards. The
-    // detail view supplies a neutral fallback only when it needs an image.
     mainImage: gallery[0]?.src || '',
     gallery,
-    noticeRef: text(d.reference) || text(d.lot) || item.id.slice(0, 8),
-    locked: !!item.locked,
+    locked,
     access: item.access || 'free',
   };
 }
 
 export function mapTender(item) {
   const d = item.details || {};
+  const locked = !!item.locked;
   const category = item.sector === 'ngo' ? 'NGO' : item.sector === 'private' ? 'Private' : 'Public';
   return {
     id: item.id,
@@ -136,12 +125,12 @@ export function mapTender(item) {
     issuer: text(item.issuer),
     refNumber: text(d.reference),
     lot: text(d.lot),
-    closeIso: item.deadline,
-    closeLabel: formatClose(item.deadline),
+    closeIso: locked ? '' : (item.deadline || ''),
+    closeLabel: locked ? '' : formatClose(item.deadline),
     region: text(item.region),
-    summary: text(d.description),
-    sourceUrl: text(d.sourceUrl),
-    locked: !!item.locked,
+    summary: locked ? '' : text(d.description),
+    sourceUrl: locked ? '' : text(d.sourceUrl),
+    locked,
     access: item.access || 'free',
   };
 }
@@ -160,14 +149,14 @@ export function alertsFromListings(vehicles, tenders) {
   const soon = [...vehicles, ...tenders]
     .map((entry) => ({
       entry,
-      ms: new Date(entry.closeIso).getTime() - Date.now(),
+      ms: entry.closeIso ? new Date(entry.closeIso).getTime() - Date.now() : NaN,
     }))
-    .filter((row) => row.ms > 0 && row.ms < 1000 * 60 * 60 * 72)
+    .filter((row) => Number.isFinite(row.ms) && row.ms > 0 && row.ms < 1000 * 60 * 60 * 72)
     .sort((a, b) => a.ms - b.ms)
     .slice(0, 12);
 
   return soon.map((row, index) => {
-    const isVehicle = 'mainImage' in row.entry || 'gallery' in row.entry;
+    const isVehicle = 'gallery' in row.entry || 'mainImage' in row.entry;
     const hours = Math.max(1, Math.round(row.ms / (1000 * 60 * 60)));
     return {
       id: 'live-' + row.entry.id,

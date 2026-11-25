@@ -82,8 +82,12 @@ test('four sections, vehicle validation, separate lots, subscription privacy and
   assert.equal(locked.issuer,'Example Fleet Ltd');
   assert.equal(locked.details.lot,'1');
   assert.equal(locked.details.instructions,undefined);
+  assert.equal(locked.details.location,undefined);
+  assert.equal(locked.details.sourceUrl,undefined);
+  assert.equal(locked.deadline,undefined);
   assert.equal(locked.photos,undefined);
   assert.equal(locked.condition,'used');
+  assert.equal(locked.locked,true);
   assert.equal((await catalog('section=vehicle&condition=damaged'))[0].id,second);
   assert.equal((await catalog('q=Fleet+Ltd')).length,2);
   assert.equal((await catalog('make=Toyota')).length,0);

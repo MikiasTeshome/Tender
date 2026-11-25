@@ -459,7 +459,13 @@ export default function Admin({api, onBack}) {
         <p className="staff-note">
           Set at least one ETB price and bank payment instructions before bidders can submit payment references.
           Blank prices disable that term. Instructions are shown on the website Profile screen.
+          Replace any smoke/placeholder account number with the real CBE account before launch.
         </p>
+        {plans?.instructions && /smoke|replace|1000123456789|REPLACE/i.test(plans.instructions) ? (
+          <p className="staff-callout staff-callout-error" role="status">
+            Payment instructions still look like a placeholder. Update the bank account number before client handoff.
+          </p>
+        ) : null}
         <div className="staff-form-grid">
           {plans.plans.map((plan) => (
             <label key={plan.months}>
